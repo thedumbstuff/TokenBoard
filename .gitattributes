@@ -1,0 +1,6 @@
+# Normalise line endings for everyone who clones this repo.
+* text=auto
+
+# Windows batch files break with LF endings; cmd.exe mis-parses labels and
+# multi-line commands. These must stay CRLF on every platform.
+*.bat text eol=crlf

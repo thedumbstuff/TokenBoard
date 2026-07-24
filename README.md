@@ -174,3 +174,17 @@ To reset everything and start clean, close the system and delete the `data` fold
 
 If something else already uses port 8080, edit `port` in `data\config.json`
 and change `set PORT=8080` in `open-screens.bat` to match.
+
+---
+
+## For developers
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the system works
+- [docs/DESIGN.md](docs/DESIGN.md) — why it is built this way
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to run it, test it, and what will
+  not be merged
+
+Run `node server.js` to start and `node test.js` for the regression suite.
+There are no dependencies and no build step, on purpose.
+
+TokenBoard is open source under the [MIT license](LICENSE).

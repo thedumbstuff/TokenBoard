@@ -113,11 +113,14 @@ public/
   display.html   the waiting-room TV
   doctor.html    the doctor's phone
   settings.html  PIN-protected configuration
+docs/
+  ARCHITECTURE.md  how the system works
+  DESIGN.md        why it is built this way - update when a decision here changes
 data/            runtime only, never committed
   config.json
   state-YYYY-MM-DD.json
   archive/YYYY-MM-DD.csv
-*.bat            Windows launchers - keep CRLF line endings
+*.bat            Windows launchers - keep CRLF line endings (.gitattributes enforces)
 ```
 
 ## Conventions
