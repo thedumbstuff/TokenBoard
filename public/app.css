@@ -71,6 +71,18 @@ body { overflow-x: hidden; }
 
 .topbar .spacer { flex: 1; }
 
+/* Product name. Every screen carries it in a corner so a support call can
+   name the software; it must stay quieter than the clinic's own name. */
+.brand {
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #9DB2C4;
+  white-space: nowrap;
+}
+
 .pill {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
