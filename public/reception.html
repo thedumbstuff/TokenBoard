@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reception - TokenBoard</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1 id="clinic">Clinic</h1>
+    <div class="sub" id="doctor"></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill">Waiting <b id="cnt-wait">0</b></div>
+  <div class="pill">Seen today <b id="cnt-done">0</b></div>
+  <div class="pill" id="clock">--:--</div>
+  <button class="btn btn-ghost" id="undo">Undo last</button>
+  <a class="btn btn-ghost" href="/display" target="_blank" rel="noopener">Waiting-room screen</a>
+  <a class="btn btn-ghost" href="/settings">Settings</a>
+</div>
+
+<div class="wrap">
+
+  <!-- ---------- left: the only two buttons that issue a number ---------- -->
+  <div>
+    <div class="panel" style="padding:16px">
+      <h2>Give a number</h2>
+
+      <button class="btn-huge btn-go" id="new-normal">
+        <span class="glyph">+</span>
+        <span class="label">New patient
+          <small class="hi">नया मरीज़</small>
+        </span>
+      </button>
+
+      <div style="height:12px"></div>
+
+      <button class="btn-huge btn-appt" id="new-appt">
+        <span class="glyph">&#9679;</span>
+        <span class="label">Booked / follow-up
+          <small class="hi">अपॉइंटमेंट / दोबारा</small>
+        </span>
+      </button>
+
+      <div style="height:12px"></div>
+
+      <button class="btn-huge btn-urgent" id="new-urgent">
+        <span class="glyph">!</span>
+        <span class="label">Urgent patient
+          <small class="hi">आपातकालीन मरीज़</small>
+        </span>
+      </button>
+
+      <p class="hint" style="color:var(--muted);font-size:13px;margin:14px 2px 0" id="policy-note"></p>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
+      <h2>Waiting outside <span id="wait-badge"></span></h2>
+      <ul class="qlist" id="waiting"></ul>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel" id="skipped-panel" hidden>
+      <h2>Did not answer</h2>
+      <ul class="qlist" id="skipped"></ul>
+    </div>
+  </div>
+
+  <!-- ---------- right: rooms ---------- -->
+  <div>
+    <div class="rooms" id="rooms"></div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
+      <h2>Finished recently</h2>
+      <ul class="qlist" id="recent"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- the popup shown after a number is given ---------- -->
+<div class="overlay" id="ticket-overlay" hidden>
+  <div class="ticket">
+    <div class="cap">Write this on the OPD slip</div>
+    <div class="big num" id="ticket-num">0</div>
+    <div class="note" id="ticket-note">and tell the patient the number</div>
+    <div class="row">
+      <button class="btn btn-go" style="color:#fff" id="ticket-next">+ Next patient</button>
+      <button class="btn" id="ticket-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let ticketTimer = null;
+
+/* ---------- issuing numbers ---------- */
+
+const BUTTONS = ['new-normal', 'new-appt', 'new-urgent'];
+
+async function give(kind) {
+  BUTTONS.forEach(b => $(b).disabled = true);
+  try {
+    const res = await CQ.post('/api/token', { kind });
+    if (res && res.token) showTicket(res.token);
+  } catch (e) {
+    alert('Could not give a number. Check the black window is still open.');
+  } finally {
+    BUTTONS.forEach(b => $(b).disabled = false);
+  }
+}
+
+function showTicket(token) {
+  const el = $('ticket-num');
+  el.textContent = token.label;
+  el.classList.toggle('is-urgent', token.kind === 'urgent');
+  el.classList.toggle('is-appt', token.kind === 'appointment');
+  $('ticket-note').textContent =
+    token.kind === 'urgent' ? 'Urgent \u2014 this patient goes in next'
+    : token.kind === 'appointment' ? 'Booked patient \u2014 and tell them the number'
+    : 'and tell the patient the number';
+  $('ticket-overlay').hidden = false;
+  clearTimeout(ticketTimer);
+  // long enough to write it down, short enough not to block a queue at the desk
+  ticketTimer = setTimeout(hideTicket, 15000);
+}
+
+function hideTicket() {
+  clearTimeout(ticketTimer);
+  $('ticket-overlay').hidden = true;
+}
+
+$('new-normal').onclick = () => give('normal');
+$('new-appt').onclick = () => give('appointment');
+$('new-urgent').onclick = () => give('urgent');
+$('ticket-close').onclick = hideTicket;
+$('ticket-next').onclick = () => give('normal');
+
+// clicking anywhere on the dark area also closes it
+$('ticket-overlay').onclick = e => { if (e.target === $('ticket-overlay')) hideTicket(); };
+
+$('undo').onclick = async () => {
+  const r = await CQ.post('/api/undo', {});
+  if (!r.ok) alert('Nothing left to undo.');
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') hideTicket();
+  if (e.key === 'F2') { e.preventDefault(); give('normal'); }
+  if (e.key === 'F3') { e.preventDefault(); give('appointment'); }
+  if (e.key === 'F4') { e.preventDefault(); give('urgent'); }
+});
+
+/* ---------- rendering ---------- */
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function renderRooms(s) {
+  const host = $('rooms');
+  host.innerHTML = '';
+  for (const room of s.rooms) {
+    const card = document.createElement('div');
+    card.className = 'room';
+    const t = room.token;
+    card.innerHTML =
+      '<div class="room-head" style="background:' + esc(room.color) + '">' +
+        '<span style="font-size:18px;font-weight:700;opacity:1">' + esc(room.name) + '</span>' +
+        '<span class="hi">' + esc(room.nameHi) + '</span>' +
+      '</div>' +
+      '<div class="room-body">' +
+        (t
+          ? '<div class="room-token num' + kindCls(t) + '">' + esc(t.label) + '</div>' +
+            '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
+            '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>' +
+            '<button class="mini" data-skip="' + t.id + '" style="margin-top:2px">Patient not here</button>'
+          : '<div class="room-empty">Empty' +
+              (s.waiting.length && !s.autoAssign
+                ? '<div style="margin-top:12px"><button class="btn" data-call="' + room.id + '">Call next</button></div>'
+                : '') +
+            '</div>') +
+      '</div>';
+    host.appendChild(card);
+  }
+
+  host.querySelectorAll('[data-done]').forEach(b =>
+    b.onclick = () => CQ.post('/api/done', { room: Number(b.dataset.done) }));
+  host.querySelectorAll('[data-skip]').forEach(b =>
+    b.onclick = () => CQ.post('/api/skip', { id: Number(b.dataset.skip) }));
+  host.querySelectorAll('[data-call]').forEach(b =>
+    b.onclick = () => CQ.post('/api/call', { room: Number(b.dataset.call) }));
+}
+
+function renderList(hostId, items, opts) {
+  const host = $(hostId);
+  host.innerHTML = '';
+  if (!items.length) {
+    host.innerHTML = '<li><div class="empty-note">' + esc(opts.empty) + '</div></li>';
+    return;
+  }
+  for (const t of items) {
+    const li = document.createElement('li');
+    li.innerHTML =
+      '<span class="qnum num' + kindCls(t) + '">' + esc(t.label) + '</span>' +
+      kindTag(t) +
+      '<span class="qname">' + (t.createdAt ? 'waiting ' + esc(CQ.waitedMinutes(t.createdAt)) : '') + '</span>' +
+      (opts.action
+        ? '<button class="mini" data-act="' + t.id + '">' + esc(opts.action) + '</button>'
+        : '');
+    host.appendChild(li);
+  }
+  if (opts.action) {
+    host.querySelectorAll('[data-act]').forEach(b =>
+      b.onclick = () => CQ.post(opts.endpoint, { id: Number(b.dataset.act) }));
+  }
+}
+
+CQ.onState(s => {
+  $('clinic').textContent = s.clinicName;
+  $('doctor').textContent = s.doctorName + '  \u00B7  ' +
+    new Date(s.date + 'T00:00:00').toLocaleDateString('en-IN',
+      { weekday: 'long', day: 'numeric', month: 'long' });
+  $('cnt-wait').textContent = s.stats.waiting;
+  $('cnt-done').textContent = s.stats.done;
+  $('undo').disabled = !s.canUndo;
+  $('policy-note').textContent = 'Urgent patients are always called first. ' + (
+    s.queuePolicy === 'appointment_first'
+      ? 'Booked patients are then called before walk-ins.'
+      : s.queuePolicy === 'arrival'
+        ? 'Everyone else is called in the order they arrived.'
+        : 'Booked patients and walk-ins then take turns.');
+
+  renderRooms(s);
+  renderList('waiting', s.waiting, { empty: 'Nobody is waiting', action: 'Remove', endpoint: '/api/skip' });
+  renderList('recent', s.recentDone, { empty: 'Nobody checked yet', action: 'Bring back', endpoint: '/api/recall' });
+
+  $('skipped-panel').hidden = s.skipped.length === 0;
+  if (s.skipped.length) {
+    renderList('skipped', s.skipped, { empty: '', action: 'Call again', endpoint: '/api/recall' });
+  }
+});
+
+CQ.clock('clock');
+CQ.start(1500);
+setInterval(() => { if (CQ.state) CQ._emit(); }, 30000); // refresh "waiting X min"
+</script>
+</body>
+</html>

@@ -1,0 +1,415 @@
+/* TokenBoard - shared styles.
+   No web fonts: the clinic may have no internet. Everything below is a font
+   that ships with Windows (Segoe UI / Nirmala UI for Devanagari). */
+
+:root {
+  --ink: #12263A;
+  --ink-soft: #1D3A55;
+  --paper: #ECEFEC;
+  --card: #FFFFFF;
+  --line: #D4DAD6;
+  --muted: #5C6B7A;
+  --go: #0B7A45;
+  --go-dark: #085C34;
+  --urgent: #C0272D;
+  --urgent-dark: #93191E;
+  --appt: #A15C00;
+  --appt-dark: #7C4600;
+  --amber: #B26A00;
+
+  --display: 'Segoe UI Variable Display', 'Segoe UI Semibold', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Segoe UI', 'Nirmala UI', system-ui, -apple-system, sans-serif;
+  --numeral: 'Segoe UI Black', 'Arial Black', 'Segoe UI', Impact, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--body);
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+body { overflow-x: hidden; }
+
+.hi { font-family: 'Nirmala UI', var(--body); }
+
+.num {
+  font-family: var(--numeral);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.topbar h1 {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.topbar .sub {
+  font-size: 13px;
+  color: #9DB2C4;
+  margin-top: 2px;
+}
+
+.topbar .spacer { flex: 1; }
+
+.pill {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill b { font-size: 17px; }
+
+/* ---------- buttons ---------- */
+
+.btn {
+  font-family: var(--body);
+  font-size: 17px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 20px;
+  cursor: pointer;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  transition: transform .06s ease, filter .12s ease;
+}
+
+.btn:hover { filter: brightness(0.97); }
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: 3px solid #F0B429; outline-offset: 2px; }
+.btn[disabled] { opacity: .4; cursor: not-allowed; }
+
+.btn-huge {
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  color: #fff;
+  padding: 26px 20px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.btn-huge .glyph {
+  font-size: 40px;
+  line-height: 1;
+  width: 52px;
+  text-align: center;
+  flex: none;
+}
+
+.btn-huge .label {
+  font-family: var(--display);
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.btn-huge .label small {
+  display: block;
+  font-family: 'Nirmala UI', var(--body);
+  font-size: 16px;
+  font-weight: 500;
+  opacity: .85;
+  margin-top: 3px;
+}
+
+.btn-go { background: var(--go); }
+.btn-go:hover { background: var(--go-dark); }
+.btn-urgent { background: var(--urgent); }
+.btn-urgent:hover { background: var(--urgent-dark); }
+.btn-appt { background: var(--appt); }
+.btn-appt:hover { background: var(--appt-dark); }
+
+/* The letter in front of the number (A / E) is the real signal; colour is a
+   second, faster cue on top of it. */
+.room-token.is-appt, .qnum.is-appt, .ticket .big.is-appt { color: var(--appt); }
+.tag.is-appt { background: var(--appt); }
+
+.btn-done {
+  width: 100%;
+  background: var(--go);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 18px;
+  font-family: var(--display);
+  font-size: 21px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+.btn-done:hover { background: var(--go-dark); }
+.btn-done:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(0, 0, 0, .2); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, .3);
+  color: #fff;
+  font-size: 14px;
+  padding: 9px 14px;
+  border-radius: 9px;
+}
+
+.btn-ghost:hover { background: rgba(255, 255, 255, .12); }
+
+/* ---------- layout ---------- */
+
+.wrap {
+  display: grid;
+  grid-template-columns: minmax(330px, 30%) 1fr;
+  gap: 18px;
+  padding: 18px;
+  align-items: start;
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.panel > h2 {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+/* ---------- room cards ---------- */
+
+.rooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.room {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.room-head {
+  padding: 11px 16px;
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.room-head span { font-size: 14px; font-weight: 500; opacity: .85; }
+
+.room-body {
+  padding: 18px 16px 16px;
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.room-token {
+  font-family: var(--numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 74px;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.room-token.is-urgent { color: var(--urgent); }
+
+.room-empty {
+  font-size: 17px;
+  color: var(--muted);
+  padding: 24px 0;
+}
+
+.room-meta { font-size: 14px; color: var(--muted); min-height: 20px; }
+
+/* ---------- waiting list ---------- */
+
+.qlist { list-style: none; margin: 0; padding: 0; }
+
+.qlist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.qlist li:last-child { border-bottom: none; }
+
+.qnum {
+  font-family: var(--numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 26px;
+  min-width: 76px;
+}
+
+.qnum.is-urgent { color: var(--urgent); }
+
+.qname { flex: 1; font-size: 15px; color: var(--muted); text-align: left; }
+
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  background: var(--urgent);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+
+.empty-note {
+  color: var(--muted);
+  font-size: 15px;
+  padding: 18px 4px;
+  text-align: center;
+}
+
+.mini {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 11px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.mini:hover { background: var(--paper); }
+
+/* ---------- token popup ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 20, 32, .75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.overlay[hidden] { display: none; }
+
+.ticket {
+  background: #fff;
+  border-radius: 22px;
+  padding: 40px 56px;
+  text-align: center;
+  min-width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+}
+
+.ticket .cap {
+  font-size: 15px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.ticket .big {
+  font-family: var(--numeral);
+  font-variant-numeric: tabular-nums;
+  font-size: 150px;
+  line-height: 1;
+  margin: 10px 0 4px;
+}
+
+.ticket .big.is-urgent { color: var(--urgent); }
+
+.ticket .note { color: var(--muted); font-size: 17px; margin-bottom: 22px; }
+
+.ticket .row { display: flex; gap: 10px; justify-content: center; }
+
+/* ---------- forms ---------- */
+
+.field { margin-bottom: 16px; }
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field input[type="password"],
+.field select {
+  width: 100%;
+  font-family: var(--body);
+  font-size: 16px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.field .hint { font-size: 13px; color: var(--muted); margin-top: 5px; }
+
+.check { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; font-size: 16px; }
+.check input { width: 20px; height: 20px; }
+
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: 1fr; }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .ticket, .ticket * { visibility: visible; }
+  .ticket { position: absolute; inset: 0; box-shadow: none; padding: 10mm; }
+  .ticket .row { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doctor - TokenBoard</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .doc-wrap { padding: 14px; display: grid; gap: 14px; }
+  .rooms { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 18px;
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+  }
+  .stat b { display: block; font-family: var(--numeral); font-size: 34px; }
+  .stat span { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1 id="clinic">Clinic</h1>
+    <div class="sub" id="doctor"></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill" id="clock">--:--</div>
+  <button class="btn btn-ghost" id="pause">Pause queue</button>
+</div>
+
+<div class="doc-wrap">
+  <div class="summary">
+    <div class="stat"><b id="s-wait">0</b><span>Waiting</span></div>
+    <div class="stat"><b id="s-room">0</b><span>In rooms</span></div>
+    <div class="stat"><b id="s-done">0</b><span>Seen</span></div>
+    <div class="stat"><b id="s-avg">-</b><span>Avg wait (min)</span></div>
+  </div>
+
+  <div class="rooms" id="rooms"></div>
+
+  <div class="panel">
+    <h2>Waiting outside</h2>
+    <ul class="qlist" id="waiting"></ul>
+  </div>
+
+  <div class="panel">
+    <h2>End of day</h2>
+    <a class="btn" href="/api/report.csv">Download today's list (Excel)</a>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+$('pause').onclick = () => CQ.post('/api/pause', { paused: !(CQ.state && CQ.state.paused) });
+
+CQ.onState(s => {
+  $('clinic').textContent = s.clinicName;
+  $('doctor').textContent = s.doctorName;
+  $('s-wait').textContent = s.stats.waiting;
+  $('s-room').textContent = s.stats.inRoom;
+  $('s-done').textContent = s.stats.done;
+  $('s-avg').textContent = s.stats.avgWait == null ? '-' : s.stats.avgWait;
+  $('pause').textContent = s.paused ? 'Resume queue' : 'Pause queue';
+
+  const host = $('rooms');
+  host.innerHTML = '';
+  for (const room of s.rooms) {
+    const t = room.token;
+    const card = document.createElement('div');
+    card.className = 'room';
+    card.innerHTML =
+      '<div class="room-head" style="background:' + esc(room.color) + '">' +
+        '<span>' + esc(room.name) + '</span>' +
+      '</div>' +
+      '<div class="room-body">' +
+        (t
+          ? '<div class="room-token num' + kindCls(t) + '">' + esc(t.label) + '</div>' +
+            '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
+            '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>'
+          : '<div class="room-empty">Empty</div>') +
+      '</div>';
+    host.appendChild(card);
+  }
+  host.querySelectorAll('[data-done]').forEach(b =>
+    b.onclick = () => CQ.post('/api/done', { room: Number(b.dataset.done) }));
+
+  const w = $('waiting');
+  w.innerHTML = '';
+  if (!s.waiting.length) {
+    w.innerHTML = '<li><div class="empty-note">Nobody is waiting</div></li>';
+  } else {
+    for (const t of s.waiting) {
+      const li = document.createElement('li');
+      li.innerHTML =
+        '<span class="qnum num' + kindCls(t) + '">' + esc(t.label) + '</span>' +
+        kindTag(t) +
+        '<span class="qname">waiting ' + esc(CQ.waitedMinutes(t.createdAt)) + '</span>';
+      w.appendChild(li);
+    }
+  }
+});
+
+CQ.clock('clock');
+CQ.start(2000);
+setInterval(() => { if (CQ.state) CQ._emit(); }, 30000);
+</script>
+</body>
+</html>

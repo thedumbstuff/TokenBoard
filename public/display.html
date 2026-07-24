@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Now serving</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  body { background: var(--ink); color: #fff; overflow: hidden; }
+
+  .screen {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  .d-head {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 34px;
+    border-bottom: 1px solid rgba(255, 255, 255, .12);
+  }
+
+  .d-head h1 {
+    font-family: var(--display);
+    font-size: clamp(22px, 2.4vw, 40px);
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .d-head .who { color: #9DB2C4; font-size: clamp(13px, 1.2vw, 20px); margin-top: 3px; }
+  .d-head .spacer { flex: 1; }
+  .d-head .time { font-family: var(--numeral); font-size: clamp(22px, 2.4vw, 40px); }
+
+  .d-rooms {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 3px;
+    background: rgba(255, 255, 255, .12);
+    min-height: 0;
+  }
+
+  .d-room {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2vh 1vw;
+    position: relative;
+    min-height: 0;
+  }
+
+  .d-room .rname {
+    font-family: var(--display);
+    font-size: clamp(18px, 2.2vw, 40px);
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    opacity: .95;
+  }
+
+  .d-room .rname-hi {
+    font-family: 'Nirmala UI', sans-serif;
+    font-size: clamp(14px, 1.5vw, 26px);
+    opacity: .8;
+    margin-top: 2px;
+  }
+
+  .d-room .rtoken {
+    font-family: var(--numeral);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(70px, 15vw, 260px);
+    line-height: .95;
+    margin: 1.5vh 0;
+  }
+
+  .d-room .rempty {
+    font-family: var(--display);
+    font-size: clamp(18px, 2vw, 34px);
+    opacity: .55;
+    margin: 4vh 0;
+  }
+
+  .d-room.flash { animation: flash 1s ease-out 3; }
+
+  @keyframes flash {
+    0%, 100% { filter: brightness(1); }
+    50%      { filter: brightness(1.55); }
+  }
+
+  .d-foot {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    padding: 14px 34px;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+    min-height: 82px;
+  }
+
+  .d-foot .cap {
+    font-family: var(--display);
+    font-size: clamp(12px, 1vw, 17px);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #9DB2C4;
+    white-space: nowrap;
+  }
+
+  .nextlist { display: flex; gap: 12px; flex-wrap: wrap; flex: 1; }
+
+  .nextlist span {
+    font-family: var(--numeral);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(20px, 2.2vw, 38px);
+    background: rgba(255, 255, 255, .1);
+    border-radius: 10px;
+    padding: 4px 16px;
+  }
+
+  .nextlist span.is-urgent { background: var(--urgent); }
+  .nextlist span.is-appt { background: var(--appt); }
+
+  .waitcount {
+    font-family: var(--display);
+    font-size: clamp(14px, 1.4vw, 24px);
+    color: #9DB2C4;
+    white-space: nowrap;
+  }
+
+  .startup {
+    position: fixed;
+    inset: 0;
+    background: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    cursor: pointer;
+    z-index: 60;
+  }
+
+  .startup h2 { font-family: var(--display); font-size: 34px; margin: 0; }
+  .startup p { color: #9DB2C4; font-size: 19px; margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="screen">
+  <div class="d-head">
+    <div>
+      <h1 id="clinic">Clinic</h1>
+      <div class="who" id="doctor"></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="time num" id="clock">--:--</div>
+  </div>
+
+  <div class="d-rooms" id="rooms"></div>
+
+  <div class="d-foot">
+    <div class="cap">Next<br>अगला</div>
+    <div class="nextlist" id="next"></div>
+    <div class="waitcount" id="waitcount"></div>
+  </div>
+</div>
+
+<div class="startup" id="startup">
+  <h2>Touch the screen to start</h2>
+  <p>This turns on the announcement voice</p>
+</div>
+
+<script src="common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let soundOn = false;
+let known = {};      // roomId -> token label currently shown
+let firstPaint = true;
+
+$('startup').onclick = () => {
+  soundOn = true;
+  CQ.chime();
+  $('startup').remove();
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+};
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function announce(room, label, lang) {
+  if (!soundOn) return;
+  CQ.chime();
+  const spelled = CQ.spellOut(label);
+  setTimeout(() => {
+    if (lang === 'hi' || lang === 'both') {
+      CQ.speak('टोकन नंबर ' + spelled + '. कृपया ' + room.nameHi + ' में जाएं.', 'hi-IN');
+    }
+    if (lang === 'en' || lang === 'both') {
+      CQ.speak('Token number ' + spelled + '. Please go to ' + room.name + '.', 'en-IN');
+    }
+  }, 700);
+}
+
+CQ.onState(s => {
+  $('clinic').textContent = s.clinicName;
+  $('doctor').textContent = s.doctorName;
+
+  const host = $('rooms');
+  host.innerHTML = '';
+
+  for (const room of s.rooms) {
+    const div = document.createElement('div');
+    div.className = 'd-room';
+    div.style.background = room.color;
+    const t = room.token;
+    div.innerHTML =
+      '<div class="rname">' + esc(room.name) + '</div>' +
+      '<div class="rname-hi">' + esc(room.nameHi) + '</div>' +
+      (t ? '<div class="rtoken">' + esc(t.label) + '</div>'
+         : '<div class="rempty">\u2014</div>');
+    host.appendChild(div);
+
+    const label = t ? t.label : null;
+    if (!firstPaint && label && known[room.id] !== label) {
+      div.classList.add('flash');
+      announce(room, label, s.language);
+    }
+    known[room.id] = label;
+  }
+  firstPaint = false;
+
+  const nx = $('next');
+  nx.innerHTML = '';
+  s.waiting.slice(0, 8).forEach(t => {
+    const sp = document.createElement('span');
+    if (t.kind === 'urgent') sp.className = 'is-urgent';
+    else if (t.kind === 'appointment') sp.className = 'is-appt';
+    sp.textContent = t.label;
+    nx.appendChild(sp);
+  });
+  if (!s.waiting.length) {
+    nx.innerHTML = '<span style="background:none;opacity:.5">\u2014</span>';
+  }
+
+  $('waitcount').textContent = s.stats.waiting + ' waiting'
+    + (s.stats.avgWait != null ? '  \u00B7  about ' + s.stats.avgWait + ' min wait' : '');
+});
+
+CQ.clock('clock');
+CQ.start(1500);
+</script>
+</body>
+</html>

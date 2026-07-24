@@ -1,0 +1,11 @@
+# Live clinic data - never commit, it contains real patient flow for the day
+data/
+!data/archive/.keep
+
+node_modules/
+*.log
+*.tmp
+*.bak
+Thumbs.db
+desktop.ini
+.DS_Store

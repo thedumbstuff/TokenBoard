@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings - TokenBoard</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .set-wrap { max-width: 780px; margin: 22px auto; padding: 0 16px; display: grid; gap: 16px; }
+  .roomrow { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .roomrow input[type="text"] { flex: 1; }
+  .roomrow input[type="color"] { width: 54px; height: 44px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .saved { color: var(--go); font-weight: 700; }
+  @media (max-width: 640px) { .two { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><h1>Settings</h1><div class="sub">Doctor / owner only</div></div>
+  <div class="spacer"></div>
+  <a class="btn btn-ghost" href="/">Back to reception</a>
+</div>
+
+<div class="set-wrap">
+
+  <div class="panel" id="lock">
+    <h2>Enter PIN</h2>
+    <div class="field" style="max-width:220px">
+      <input type="password" id="pin" inputmode="numeric" placeholder="PIN">
+      <div class="hint">Default is 1234</div>
+    </div>
+    <button class="btn btn-go" style="color:#fff" id="unlock">Open settings</button>
+    <div id="lock-err" style="color:var(--urgent);margin-top:10px"></div>
+  </div>
+
+  <div id="form" hidden>
+    <div class="panel">
+      <h2>Clinic</h2>
+      <div class="two">
+        <div class="field">
+          <label>Clinic name</label>
+          <input type="text" id="clinicName">
+        </div>
+        <div class="field">
+          <label>Doctor name</label>
+          <input type="text" id="doctorName">
+        </div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
+      <h2>Rooms</h2>
+      <div class="field" style="max-width:200px">
+        <label>How many rooms</label>
+        <select id="roomCount">
+          <option>1</option><option>2</option><option>3</option>
+          <option>4</option><option>5</option><option>6</option>
+        </select>
+      </div>
+      <div id="roomrows"></div>
+      <div class="hint" style="color:var(--muted);font-size:13px">
+        Stick a coloured paper on each door matching the colour here. Patients who
+        cannot read the room name can still match the colour on the screen.
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
+      <h2>Numbering</h2>
+      <div class="two">
+        <div class="field">
+          <label>First number each morning</label>
+          <input type="number" id="startNumber" min="0">
+          <div class="hint">Many clinics use 1, some use 101.</div>
+        </div>
+        <div class="field">
+          <label>Urgent letter</label>
+          <input type="text" id="urgentPrefix" maxlength="2">
+          <div class="hint">Urgent patients get E1, E2, ... so they never clash with walk-in numbers.</div>
+        </div>
+        <div class="field">
+          <label>Booked / follow-up letter</label>
+          <input type="text" id="apptPrefix" maxlength="2">
+          <div class="hint">Booked patients get A1, A2, ... a third separate series.</div>
+        </div>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="resetDaily">
+        <label for="resetDaily" style="margin:0;text-transform:none;letter-spacing:0;font-size:16px;color:var(--ink)">
+          Start again from the first number every morning
+        </label>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
+      <h2>Who gets called first</h2>
+      <div class="field">
+        <label>Booked patients and walk-ins</label>
+        <select id="queuePolicy">
+          <option value="mix">Take turns (fairest)</option>
+          <option value="appointment_first">Booked patients always go first</option>
+          <option value="arrival">Whoever arrived first</option>
+        </select>
+        <div class="hint">Urgent patients come before everyone in all three options.</div>
+      </div>
+      <div id="mixRow" class="two" style="max-width:420px">
+        <div class="field">
+          <label>Booked patients per turn</label>
+          <input type="number" id="mixAppointment" min="1" max="9">
+        </div>
+        <div class="field">
+          <label>Walk-ins per turn</label>
+          <input type="number" id="mixWalkIn" min="1" max="9">
+        </div>
+      </div>
+      <div class="hint" style="color:var(--muted);font-size:13px" id="mixExample"></div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
+      <h2>Behaviour</h2>
+      <div class="check">
+        <input type="checkbox" id="autoAssign">
+        <label for="autoAssign" style="margin:0;text-transform:none;letter-spacing:0;font-size:16px;color:var(--ink)">
+          Send the next patient into a room automatically when it becomes free
+        </label>
+      </div>
+      <div class="check">
+        <input type="checkbox" id="announce">
+        <label for="announce" style="margin:0;text-transform:none;letter-spacing:0;font-size:16px;color:var(--ink)">
+          Announce the number out loud on the waiting-room screen
+        </label>
+      </div>
+      <div class="field" style="max-width:260px">
+        <label>Announcement language</label>
+        <select id="language">
+          <option value="both">Hindi and English</option>
+          <option value="hi">Hindi only</option>
+          <option value="en">English only</option>
+        </select>
+      </div>
+      <div class="field" style="max-width:200px">
+        <label>Change PIN</label>
+        <input type="text" id="newPin" placeholder="leave blank to keep">
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-go" style="color:#fff" id="save">Save settings</button>
+      <span id="saved"></span>
+    </div>
+    <div style="height:30px"></div>
+  </div>
+</div>
+
+<script src="common.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let cfg = null;
+let pin = '';
+
+$('unlock').onclick = async () => {
+  pin = $('pin').value;
+  const r = await CQ.post('/api/verify-pin', { pin });
+  if (!r.ok) { $('lock-err').textContent = 'That PIN is not correct.'; return; }
+  $('lock').hidden = true;
+  $('form').hidden = false;
+  load();
+};
+
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') $('unlock').click(); });
+
+async function load() {
+  cfg = await (await fetch('/api/config')).json();
+  $('clinicName').value = cfg.clinicName;
+  $('doctorName').value = cfg.doctorName;
+  $('startNumber').value = cfg.startNumber;
+  $('urgentPrefix').value = cfg.urgentPrefix;
+  $('apptPrefix').value = cfg.apptPrefix;
+  $('queuePolicy').value = cfg.queuePolicy || 'mix';
+  $('mixAppointment').value = cfg.mixAppointment || 1;
+  $('mixWalkIn').value = cfg.mixWalkIn || 1;
+  $('resetDaily').checked = !!cfg.resetDaily;
+  $('autoAssign').checked = !!cfg.autoAssign;
+  $('announce').checked = !!cfg.announce;
+  $('language').value = cfg.language;
+  $('roomCount').value = String(cfg.rooms.length);
+  drawRooms(cfg.rooms);
+  updateMix();
+}
+
+/* Spell the ratio out as an actual calling order, so nobody has to guess. */
+function updateMix() {
+  const isMix = $('queuePolicy').value === 'mix';
+  $('mixRow').style.display = isMix ? '' : 'none';
+  if (!isMix) { $('mixExample').textContent = ''; return; }
+
+  const a = Math.min(9, Math.max(1, Number($('mixAppointment').value) || 1));
+  const w = Math.min(9, Math.max(1, Number($('mixWalkIn').value) || 1));
+  const ap = ($('apptPrefix').value || 'A');
+
+  const pattern = [];
+  for (let k = 0; k < a; k++) pattern.push('A');
+  for (let k = 0; k < w; k++) pattern.push('W');
+
+  const order = [];
+  let ca = 0, cw = 0;
+  for (let n = 0; n < 7; n++) {
+    if (pattern[n % pattern.length] === 'A') order.push(ap + (++ca));
+    else order.push(String(++cw));
+  }
+  $('mixExample').textContent =
+    'When both are waiting the order will be: ' + order.join(', ') + ', ...';
+}
+
+['queuePolicy', 'mixAppointment', 'mixWalkIn', 'apptPrefix'].forEach(id => {
+  const el = $(id);
+  if (el) { el.addEventListener('change', updateMix); el.addEventListener('input', updateMix); }
+});
+
+function drawRooms(rooms) {
+  const host = $('roomrows');
+  host.innerHTML = '';
+  rooms.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'roomrow';
+    row.innerHTML =
+      '<input type="color" value="' + (r.color || '#2C4A9A') + '">' +
+      '<input type="text" placeholder="Room name" value="' + (r.name || '') + '">' +
+      '<input type="text" class="hi" placeholder="Hindi name" value="' + (r.nameHi || '') + '">';
+    host.appendChild(row);
+  });
+}
+
+$('roomCount').onchange = () => {
+  const n = Number($('roomCount').value);
+  const cur = readRooms();
+  const palette = ['#0B6E77', '#2C4A9A', '#7A2E6B', '#8A5A00', '#1F6B33', '#8C2F39'];
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push(cur[i] || { name: 'Room ' + (i + 1), nameHi: 'कक्ष ' + (i + 1), color: palette[i % 6] });
+  }
+  drawRooms(out);
+};
+
+function readRooms() {
+  return [...document.querySelectorAll('#roomrows .roomrow')].map(row => {
+    const [c, n, h] = row.querySelectorAll('input');
+    return { color: c.value, name: n.value, nameHi: h.value };
+  });
+}
+
+$('save').onclick = async () => {
+  const next = {
+    clinicName: $('clinicName').value.trim() || 'Clinic',
+    doctorName: $('doctorName').value.trim(),
+    startNumber: Number($('startNumber').value) || 1,
+    urgentPrefix: $('urgentPrefix').value.trim() || 'E',
+    apptPrefix: $('apptPrefix').value.trim() || 'A',
+    queuePolicy: $('queuePolicy').value,
+    mixAppointment: Math.max(1, Number($('mixAppointment').value) || 1),
+    mixWalkIn: Math.max(1, Number($('mixWalkIn').value) || 1),
+    resetDaily: $('resetDaily').checked,
+    autoAssign: $('autoAssign').checked,
+    announce: $('announce').checked,
+    language: $('language').value,
+    rooms: readRooms()
+  };
+  if ($('newPin').value.trim()) next.pin = $('newPin').value.trim();
+
+  const r = await CQ.post('/api/config', { pin, config: next });
+  if (r.ok) {
+    if (next.pin) pin = next.pin;
+    $('newPin').value = '';
+    $('saved').innerHTML = '<span class="saved">Saved</span>';
+    setTimeout(() => { $('saved').textContent = ''; }, 2500);
+  } else {
+    $('saved').textContent = r.error || 'Could not save';
+  }
+};
+</script>
+</body>
+</html>

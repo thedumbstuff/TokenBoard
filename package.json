@@ -1,0 +1,14 @@
+{
+  "name": "tokenboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline patient queue and token display system for a single-doctor clinic",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
