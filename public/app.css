@@ -71,17 +71,40 @@ body { overflow-x: hidden; }
 
 .topbar .spacer { flex: 1; }
 
-/* Product name. Every screen carries it in a corner so a support call can
-   name the software; it must stay quieter than the clinic's own name. */
+/* The TokenBoard lockup, at the top of every screen: a gold token tile
+   and a two-tone wordmark. Pure CSS and Windows-shipped fonts - no images,
+   no web fonts - so the branding costs nothing offline. Sized in em so a
+   screen can scale the whole mark with font-size alone. */
 .brand {
-  font-family: var(--display);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: #9DB2C4;
+  display: inline-flex;
+  align-items: center;
+  gap: .55em;
+  font-size: 17px;
   white-space: nowrap;
+  user-select: none;
 }
+
+.brand .brand-tile {
+  width: 1.75em;
+  height: 1.75em;
+  border-radius: .5em;
+  background: linear-gradient(135deg, #F7C948 0%, #DE911D 100%);
+  color: var(--ink);
+  font-family: var(--numeral);
+  font-size: 1em;
+  line-height: 1.75em;
+  text-align: center;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18);
+}
+
+.brand .brand-name {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: .015em;
+  color: #fff;
+}
+
+.brand .brand-name .accent { color: #F7C948; }
 
 .pill {
   background: rgba(255, 255, 255, 0.12);
