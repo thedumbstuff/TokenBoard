@@ -12,6 +12,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { qrMatrix } = require('./qr');
 
 const ROOT = __dirname;
 // CQ_DATA lets the test suite run against a throwaway directory.
@@ -617,6 +618,29 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+/* Render a QR matrix with half-height blocks, two module rows per console
+   line. Light modules are printed as white blocks because the console is
+   white-on-black: the black background becomes the dark modules. */
+function qrConsoleLines(matrix) {
+  const quiet = 2; // half the spec's quiet zone; the black console adds the rest
+  const size = matrix.length + quiet * 2;
+  const dark = (r, c) => {
+    if (r < quiet || c < quiet || r >= size - quiet || c >= size - quiet) return false;
+    return matrix[r - quiet][c - quiet] === 1;
+  };
+  const lines = [];
+  for (let r = 0; r < size; r += 2) {
+    let line = '';
+    for (let c = 0; c < size; c++) {
+      const top = !dark(r, c);
+      const bottom = (r + 1 < size) ? !dark(r + 1, c) : true;
+      line += top ? (bottom ? '█' : '▀') : (bottom ? '▄' : ' ');
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
 function lanAddresses() {
   const out = [];
   const ifaces = os.networkInterfaces();
@@ -640,8 +664,14 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('  Doctor      http://localhost:' + PORT + '/doctor');
   console.log('  Settings    http://localhost:' + PORT + '/settings');
   if (lan.length) {
+    const doctorUrl = 'http://' + lan[0] + ':' + PORT + '/doctor';
     console.log('');
-    console.log('  On phone/tablet (same WiFi):  http://' + lan[0] + ':' + PORT + '/doctor');
+    console.log('  On phone/tablet (same WiFi):  ' + doctorUrl);
+    try {
+      console.log('  Or point the phone camera at this square:');
+      console.log('');
+      for (const line of qrConsoleLines(qrMatrix(doctorUrl))) console.log('   ' + line);
+    } catch (e) { /* the QR is a nicety, never fatal */ }
   }
   console.log('');
   console.log('  Today: ' + state.date + '   Keep this black window open.');

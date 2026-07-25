@@ -29,6 +29,7 @@ JSON file on every mutation.
 
 ```
 server.js        the whole backend: persistence, queue logic, HTTP
+qr.js            minimal QR encoder for the startup banner (byte mode, ECC L, v1-5)
 test.js          regression suite (starts real servers on throwaway data dirs)
 public/
   common.js      the CQ object: polling, POST helper, chime, speech

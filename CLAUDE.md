@@ -105,6 +105,7 @@ decisions, not just styling.
 
 ```
 server.js        the whole backend: state, queue logic, HTTP, persistence
+qr.js            console QR encoder for the doctor's phone URL (zero deps, ECC L, v1-5)
 test.js          regression suite
 public/
   common.js      polling, API calls, chime, speech, shared render helpers

@@ -329,6 +329,81 @@ async function testPages() {
   await stop(p);
 }
 
+function testQr() {
+  console.log('\nthe QR code printed on the console');
+  const { qrMatrix } = require('./qr');
+  const url = 'http://192.168.1.23:8080/doctor';
+  const m = qrMatrix(url);
+  const s = m.length;
+
+  ok('the matrix is square with a valid version size',
+    (s - 17) % 4 === 0 && m.every(row => row.length === s));
+  ok('finder patterns sit in three corners',
+    m[0][0] === 1 && m[0][s - 1] === 1 && m[s - 1][0] === 1 &&
+    m[1][1] === 0 && m[3][3] === 1);
+  ok('the timing pattern alternates',
+    m[6][8] === 1 && m[6][9] === 0 && m[8][6] === 1 && m[9][6] === 0);
+
+  // read the format info back and validate its BCH remainder and level
+  let fmt = 0;
+  for (let i = 0; i <= 5; i++) fmt |= m[i][8] << i;
+  fmt |= m[7][8] << 6; fmt |= m[8][8] << 7; fmt |= m[8][7] << 8;
+  for (let i = 9; i <= 14; i++) fmt |= m[8][14 - i] << i;
+  const unmasked = fmt ^ 0x5412;
+  const fdata = unmasked >>> 10;
+  let rem = fdata;
+  for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
+  check('the format info self-checks', (unmasked & 0x3FF), rem & 0x3FF);
+  check('error-correction level is L', fdata >>> 3, 1);
+
+  // independent read-back: rebuild the function-module map, unmask, unzigzag,
+  // and the payload bytes must spell the URL again
+  const mask = fdata & 7;
+  const MASKS = [
+    (r, c) => (r + c) % 2 === 0, (r, c) => r % 2 === 0, (r, c) => c % 3 === 0,
+    (r, c) => (r + c) % 3 === 0,
+    (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+    (r, c) => (r * c) % 2 + (r * c) % 3 === 0,
+    (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0,
+    (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0
+  ];
+  const fun = Array.from({ length: s }, () => new Array(s).fill(false));
+  const markSquare = (cr, cc, rad) => {
+    for (let dr = -rad; dr <= rad; dr++)
+      for (let dc = -rad; dc <= rad; dc++) {
+        const r = cr + dr, c = cc + dc;
+        if (r >= 0 && c >= 0 && r < s && c < s) fun[r][c] = true;
+      }
+  };
+  markSquare(3, 3, 4); markSquare(3, s - 4, 4); markSquare(s - 4, 3, 4);
+  const version = (s - 17) / 4;
+  if (version >= 2) markSquare(4 * version + 10, 4 * version + 10, 2);
+  for (let i = 0; i < s; i++) { fun[6][i] = true; fun[i][6] = true; }
+  for (let i = 0; i <= 8; i++) { fun[i][8] = true; fun[8][i] = true; }
+  for (let i = 0; i < 8; i++) { fun[8][s - 1 - i] = true; fun[s - 8 + i][8] = true; }
+
+  const bits = [];
+  for (let right = s - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < s; vert++) {
+      for (let j = 0; j < 2; j++) {
+        const c = right - j;
+        const upward = ((right + 1) & 2) === 0;
+        const r = upward ? s - 1 - vert : vert;
+        if (!fun[r][c]) bits.push(m[r][c] ^ (MASKS[mask](r, c) ? 1 : 0));
+      }
+    }
+  }
+  const byteAt = i => parseInt(bits.slice(i * 8, i * 8 + 8).join(''), 2);
+  const modeAndLen = byteAt(0) >> 4 === 4 ? ((byteAt(0) & 0x0F) << 4) | (byteAt(1) >> 4) : -1;
+  check('the payload announces byte mode and the right length', modeAndLen, url.length);
+  let text = '';
+  for (let i = 0; i < url.length; i++) {
+    text += String.fromCharCode(((byteAt(1 + i) & 0x0F) << 4) | (byteAt(2 + i) >> 4));
+  }
+  check('the payload spells the doctor URL', text, url);
+}
+
 /* ---------- run ---------- */
 
 (async () => {
@@ -343,6 +418,7 @@ async function testPages() {
     await testContinuousNumbering();
     await testCorrections();
     await testPages();
+    testQr();
   } catch (err) {
     failed++;
     failures.push('harness: ' + err.message);

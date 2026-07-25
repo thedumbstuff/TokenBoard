@@ -17,6 +17,9 @@ the doctor moves from room to room, and the power goes out without warning.
 | **Doctor** | Doctor's phone or tablet | `http://<pc-ip>:8080/doctor` |
 | **Settings** | Doctor / owner, PIN protected | `http://localhost:8080/settings` |
 
+Nobody has to type the doctor's address: the black server window shows a QR
+code — point the phone camera at it and the doctor's screen opens.
+
 ---
 
 ## Installing (about 10 minutes, once)
