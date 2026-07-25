@@ -1,7 +1,7 @@
 # Live clinic data - never commit, it contains real patient flow for the day
 data/
 !data/archive/.keep
-
+.idea
 node_modules/
 *.log
 *.tmp
