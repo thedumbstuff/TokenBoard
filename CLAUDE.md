@@ -69,8 +69,8 @@ the front and never consume a pattern slot.
 
 **`config.rooms` and `state.rooms` are deliberately different things.**
 Config holds the definition (name, Hindi name, colour); state holds only
-occupancy (`{id, tokenId}`). They are reconciled by id on load and whenever
-settings are saved. Do not merge them.
+occupancy and the VIP hold (`{id, tokenId, reserved}`). They are reconciled by
+id on load and whenever settings are saved. Do not merge them.
 
 **Old state files must keep loading.** `loadTodayState()` has guards like
 `if (s.lastAppt == null)`. A clinic may upgrade mid-week with a live file on

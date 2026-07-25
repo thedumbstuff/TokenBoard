@@ -238,11 +238,15 @@ CQ.onState(s => {
     div.className = 'd-room';
     div.style.background = room.color;
     const t = room.token;
+    // a reserved room is dimmed so nobody waits on it
+    if (room.reserved && !t) div.style.filter = 'brightness(.5) saturate(.5)';
     div.innerHTML =
       '<div class="rname">' + esc(room.name) + '</div>' +
       '<div class="rname-hi">' + esc(room.nameHi) + '</div>' +
       (t ? '<div class="rtoken">' + esc(t.label) + '</div>'
-         : '<div class="rempty">\u2014</div>');
+         : room.reserved
+           ? '<div class="rempty">Unavailable<br>\u0905\u0928\u0941\u092a\u0932\u092c\u094d\u0927</div>'
+           : '<div class="rempty">\u2014</div>');
     host.appendChild(div);
 
     const label = t ? t.label : null;

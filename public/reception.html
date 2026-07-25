@@ -189,12 +189,22 @@ function renderRooms(s) {
           ? '<div class="room-token num' + kindCls(t) + '">' + esc(t.label) + '</div>' +
             '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
             '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>' +
-            '<button class="mini" data-skip="' + t.id + '" style="margin-top:2px">Patient not here</button>'
-          : '<div class="room-empty">Empty' +
-              (s.waiting.length && !s.autoAssign
-                ? '<div style="margin-top:12px"><button class="btn" data-call="' + room.id + '">Call next</button></div>'
-                : '') +
-            '</div>') +
+            '<button class="mini" data-skip="' + t.id + '" style="margin-top:2px">Patient not here</button>' +
+            (room.reserved
+              ? '<div class="room-vip" style="font-size:14px">Then kept for VIP</div>' +
+                '<button class="mini" data-unreserve="' + room.id + '">Available again</button>'
+              : '<button class="mini" data-reserve="' + room.id + '">Reserve for VIP</button>')
+          : room.reserved
+            ? '<div class="room-empty room-vip">Unavailable' +
+                '<div class="hi" style="font-weight:500;font-size:14px">VIP \u0915\u0947 \u0932\u093f\u090f \u0906\u0930\u0915\u094d\u0937\u093f\u0924</div>' +
+              '</div>' +
+              '<button class="mini" data-unreserve="' + room.id + '">Available again</button>'
+            : '<div class="room-empty">Empty' +
+                (s.waiting.length && !s.autoAssign
+                  ? '<div style="margin-top:12px"><button class="btn" data-call="' + room.id + '">Call next</button></div>'
+                  : '') +
+              '</div>' +
+              '<button class="mini" data-reserve="' + room.id + '">Reserve for VIP</button>') +
       '</div>';
     host.appendChild(card);
   }
@@ -205,6 +215,10 @@ function renderRooms(s) {
     b.onclick = () => CQ.post('/api/skip', { id: Number(b.dataset.skip) }));
   host.querySelectorAll('[data-call]').forEach(b =>
     b.onclick = () => CQ.post('/api/call', { room: Number(b.dataset.call) }));
+  host.querySelectorAll('[data-reserve]').forEach(b =>
+    b.onclick = () => CQ.post('/api/reserve', { room: Number(b.dataset.reserve), reserved: true }));
+  host.querySelectorAll('[data-unreserve]').forEach(b =>
+    b.onclick = () => CQ.post('/api/reserve', { room: Number(b.dataset.unreserve), reserved: false }));
 }
 
 function renderList(hostId, items, opts) {

@@ -125,7 +125,7 @@ function freshState(day, carry) {
     served: { appointment: 0, normal: 0 },
     cyclePos: 0,
     tokens: [],
-    rooms: config.rooms.map(r => ({ id: r.id, tokenId: null })),
+    rooms: config.rooms.map(r => ({ id: r.id, tokenId: null, reserved: false })),
     paused: false
   };
 }
@@ -162,7 +162,8 @@ function loadTodayState() {
 
   // reconcile rooms if the doctor changed room count in Settings
   const byId = new Map((s.rooms || []).map(r => [r.id, r]));
-  s.rooms = config.rooms.map(r => byId.get(r.id) || { id: r.id, tokenId: null });
+  s.rooms = config.rooms.map(r => byId.get(r.id) || { id: r.id, tokenId: null, reserved: false });
+  for (const room of s.rooms) if (room.reserved == null) room.reserved = false;
 
   return s;
 }
@@ -328,7 +329,7 @@ function callInto(roomId, token) {
 function autoAssign() {
   if (!config.autoAssign || state.paused) return;
   for (const room of state.rooms) {
-    if (room.tokenId) continue;
+    if (room.tokenId || room.reserved) continue;
     const next = orderedWaiting()[0];
     if (!next) break;
     callInto(room.id, next);
@@ -339,7 +340,7 @@ function callNextInto(roomId) {
   rollDayIfNeeded();
   snapshot();
   const room = state.rooms.find(r => r.id === roomId);
-  if (room && !room.tokenId) callInto(roomId, orderedWaiting()[0]);
+  if (room && !room.tokenId && !room.reserved) callInto(roomId, orderedWaiting()[0]);
   persist();
 }
 
@@ -452,6 +453,7 @@ function publicState() {
         name: rc.name,
         nameHi: rc.nameHi || rc.name,
         color: rc.color || '#2C4A9A',
+        reserved: !!rs.reserved,
         token: t ? { id: t.id, label: t.label, kind: t.kind, name: t.name, calledAt: t.calledAt } : null
       };
     }),
@@ -562,6 +564,19 @@ const server = http.createServer(async (req, res) => {
       if (p === '/api/skip') { skipToken(Number(body.id)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/recall') { recallToken(Number(body.id)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/undo') { const ok = undo(); return sendJson(res, 200, { ok, state: publicState() }); }
+
+      if (p === '/api/reserve') {
+        rollDayIfNeeded();
+        const room = state.rooms.find(r => r.id === Number(body.room));
+        if (!room) return sendJson(res, 200, { ok: false, error: 'No such room' });
+        snapshot();
+        // an occupied room can be reserved too: the current patient finishes
+        // normally and the room is then simply not refilled
+        room.reserved = !!body.reserved;
+        if (!room.reserved) autoAssign();
+        persist();
+        return sendJson(res, 200, { ok: true, state: publicState() });
+      }
 
       if (p === '/api/pause') {
         snapshot(); state.paused = !!body.paused;

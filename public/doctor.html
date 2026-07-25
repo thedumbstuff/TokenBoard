@@ -92,7 +92,9 @@ CQ.onState(s => {
           ? '<div class="room-token num' + kindCls(t) + '">' + esc(t.label) + '</div>' +
             '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
             '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>'
-          : '<div class="room-empty">Empty</div>') +
+          : room.reserved
+            ? '<div class="room-empty room-vip">Reserved for VIP</div>'
+            : '<div class="room-empty">Empty</div>') +
       '</div>';
     host.appendChild(card);
   }

@@ -134,6 +134,14 @@ The next patient is sent in automatically.
 - Patient not answering when called? → **Patient not here**. They move to a
   "Did not answer" list and can be called again later with one button.
 
+**Keeping a room for a VIP**
+
+- Press **Reserve for VIP** on that room's card. The queue goes around it and
+  the waiting-room screen shows the room as *Unavailable*. If a patient is
+  already inside, they finish normally and the room is then simply not refilled.
+- When it is no longer needed, press **Available again** and the queue flows
+  into it as usual. The reservation survives a power cut like everything else.
+
 Keyboard shortcuts once she is comfortable: **F2** = walk-in, **F3** = booked,
 **F4** = urgent.
 

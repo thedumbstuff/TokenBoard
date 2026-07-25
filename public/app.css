@@ -283,6 +283,10 @@ body { overflow-x: hidden; }
 
 .room-meta { font-size: 14px; color: var(--muted); min-height: 20px; }
 
+/* A room held for a VIP: clearly out of service, amber rather than red
+   because nothing is wrong - it is just not taking the queue. */
+.room-vip { color: var(--amber); font-weight: 700; }
+
 /* ---------- waiting list ---------- */
 
 .qlist { list-style: none; margin: 0; padding: 0; }

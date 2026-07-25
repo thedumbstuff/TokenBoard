@@ -309,6 +309,48 @@ async function testCorrections() {
   await stop(p);
 }
 
+async function testVipReserve() {
+  console.log('\nreserving a room for a VIP');
+  const dir = dataDir('vip'), port = portCounter++;
+  writeConfig(dir, baseConfig({
+    rooms: [
+      { id: 1, name: 'Room 1', nameHi: 'कक्ष 1', color: '#0B6E77' },
+      { id: 2, name: 'Room 2', nameHi: 'कक्ष 2', color: '#2C4A9A' }
+    ]
+  }));
+  let p = await start(dir, port);
+
+  let s = (await api.post(port, '/api/reserve', { room: 1, reserved: true })).state;
+  ok('the room shows as reserved', s.rooms[0].reserved);
+
+  await api.post(port, '/api/token', { kind: 'normal' });
+  s = (await api.post(port, '/api/token', { kind: 'normal' })).state;
+  check('patients go around the reserved room', inRooms(s), [null, '1']);
+  check('the second patient waits outside instead', labels(s), ['2']);
+
+  s = (await api.post(port, '/api/call', { room: 1 })).state;
+  check('a manual call cannot fill it either', inRooms(s), [null, '1']);
+
+  await stop(p, true);                       // power cut
+  p = await start(dir, port);
+  s = await api.get(port, '/api/state');
+  ok('the reservation survives a power cut', s.rooms[0].reserved);
+
+  s = (await api.post(port, '/api/reserve', { room: 1, reserved: false })).state;
+  check('releasing the room lets the queue flow in', inRooms(s), ['2', '1']);
+
+  // an occupied room can be reserved: the patient inside finishes normally,
+  // then the room is left empty for the VIP
+  await api.post(port, '/api/token', { kind: 'normal' });
+  s = (await api.post(port, '/api/reserve', { room: 2, reserved: true })).state;
+  check('the patient inside is not disturbed', inRooms(s), ['2', '1']);
+  s = (await api.post(port, '/api/done', { room: 2 })).state;
+  check('after that patient the room stays empty', inRooms(s), ['2', null]);
+  check('the queue keeps waiting for the other room', labels(s), ['3']);
+
+  await stop(p);
+}
+
 async function testPages() {
   console.log('\nevery screen and endpoint responds');
   const dir = dataDir('pages'), port = portCounter++;
@@ -417,6 +459,7 @@ function testQr() {
     await testNewMorning();
     await testContinuousNumbering();
     await testCorrections();
+    await testVipReserve();
     await testPages();
     testQr();
   } catch (err) {

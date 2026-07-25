@@ -140,6 +140,12 @@ With `autoAssign` on (default), every mutation ends by pouring
 With it off, the receptionist gets a "Call next" button per empty room
 (`/api/call`). Pausing the queue suspends auto-assignment; resuming fires it.
 
+A room can be **reserved for a VIP** (`/api/reserve`): both assignment paths
+skip it and the screens show it as unavailable. Reserving an occupied room is
+allowed — the patient inside finishes normally and the room is then not
+refilled. The flag lives in `state.rooms` so it survives a power cut, and it
+resets with the rest of the state at the day rollover.
+
 ### Undo
 
 `snapshot()` pushes a JSON string of the whole state (capped at 30) before
@@ -163,6 +169,7 @@ No framework; a single `http.createServer` handler with an if-chain.
 | POST | `/api/skip` | patient not present `{id}` |
 | POST | `/api/recall` | bring back a skipped/done patient `{id}` |
 | POST | `/api/undo` | restore the previous snapshot |
+| POST | `/api/reserve` | hold/release a room for a VIP `{room, reserved}` |
 | POST | `/api/pause` | `{paused: bool}` |
 | POST | `/api/config` | save settings; requires `{pin}` |
 | POST | `/api/verify-pin` | gate for the Settings page |
