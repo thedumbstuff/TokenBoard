@@ -75,6 +75,7 @@ CQ.onState(s => {
   $('s-done').textContent = s.stats.done;
   $('s-avg').textContent = s.stats.avgWait == null ? '-' : s.stats.avgWait;
   $('pause').textContent = s.paused ? 'Resume queue' : 'Pause queue';
+  $('pause').classList.toggle('is-paused', s.paused);
 
   const host = $('rooms');
   host.innerHTML = '';

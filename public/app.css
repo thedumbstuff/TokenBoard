@@ -192,6 +192,11 @@ body { overflow-x: hidden; }
 
 .btn-ghost:hover { background: rgba(255, 255, 255, .12); }
 
+/* While the queue is paused the button doubles as the status light -
+   amber, so forgetting to resume after the break is hard. */
+.btn-ghost.is-paused { background: var(--amber); border-color: var(--amber); font-weight: 700; }
+.btn-ghost.is-paused:hover { background: var(--amber); filter: brightness(1.1); }
+
 /* ---------- layout ---------- */
 
 .wrap {

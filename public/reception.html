@@ -18,6 +18,7 @@
   <div class="pill">Seen today <b id="cnt-done">0</b></div>
   <div class="pill" id="clock">--:--</div>
   <button class="btn btn-ghost" id="undo">Undo last</button>
+  <button class="btn btn-ghost" id="pause">Pause queue</button>
   <a class="btn btn-ghost" href="/display" target="_blank" rel="noopener">Waiting-room screen</a>
   <a class="btn btn-ghost" href="/settings">Settings</a>
   <div class="brand">TokenBoard</div>
@@ -154,6 +155,9 @@ $('undo').onclick = async () => {
   if (!r.ok) alert('Nothing left to undo.');
 };
 
+// doctor on a break: stop filling rooms, keep giving out numbers
+$('pause').onclick = () => CQ.post('/api/pause', { paused: !(CQ.state && CQ.state.paused) });
+
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') hideTicket();
   if (e.key === 'F2') { e.preventDefault(); give('normal'); }
@@ -235,6 +239,8 @@ CQ.onState(s => {
   $('cnt-wait').textContent = s.stats.waiting;
   $('cnt-done').textContent = s.stats.done;
   $('undo').disabled = !s.canUndo;
+  $('pause').textContent = s.paused ? 'Resume queue' : 'Pause queue';
+  $('pause').classList.toggle('is-paused', s.paused);
   $('policy-note').textContent = 'Urgent patients are always called first. ' + (
     s.queuePolicy === 'appointment_first'
       ? 'Booked patients are then called before walk-ins.'
