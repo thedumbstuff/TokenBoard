@@ -123,6 +123,21 @@
   .nextlist span.is-urgent { background: var(--urgent); }
   .nextlist span.is-appt { background: var(--appt); }
 
+  /* Missed numbers: dashed outline, deliberately quieter than the solid
+     "next" pills - these patients need to see their number and go back to
+     the desk, but the queue itself stays the loudest thing on screen. */
+  .missedlist { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .missedlist span {
+    font-family: var(--numeral);
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(20px, 2.2vw, 38px);
+    border: 2px dashed rgba(255, 255, 255, .45);
+    color: rgba(255, 255, 255, .8);
+    border-radius: 10px;
+    padding: 4px 16px;
+  }
+
   .waitcount {
     font-family: var(--display);
     font-size: clamp(14px, 1.4vw, 24px);
@@ -164,6 +179,8 @@
   <div class="d-foot">
     <div class="cap">Next<br>अगला</div>
     <div class="nextlist" id="next"></div>
+    <div class="cap" id="missed-cap" hidden>Missed<br>छूटे</div>
+    <div class="missedlist" id="missed" hidden></div>
     <div class="waitcount" id="waitcount"></div>
     <div class="brand">TokenBoard</div>
   </div>
@@ -249,6 +266,18 @@ CQ.onState(s => {
   if (!s.waiting.length) {
     nx.innerHTML = '<span style="background:none;opacity:.5">\u2014</span>';
   }
+
+  // patients who did not answer their call: show the most recent few so
+  // someone coming back from the chemist knows to go to the desk
+  const ms = $('missed');
+  const missed = s.skipped.slice(-4);
+  $('missed-cap').hidden = ms.hidden = missed.length === 0;
+  ms.innerHTML = '';
+  missed.forEach(t => {
+    const sp = document.createElement('span');
+    sp.textContent = t.label;
+    ms.appendChild(sp);
+  });
 
   $('waitcount').textContent = s.stats.waiting + ' waiting'
     + (s.stats.avgWait != null ? '  \u00B7  about ' + s.stats.avgWait + ' min wait' : '');
