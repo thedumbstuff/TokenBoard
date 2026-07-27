@@ -555,6 +555,10 @@ function publicState() {
   const done = state.tokens.filter(t => t.status === 'done' && t.kind !== 'service');
   const waits = done.filter(t => t.calledAt).map(t => (t.calledAt - t.createdAt) / 60000);
   const avgWait = waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null;
+  // the whole journey, number issued -> finally finished; a patient sent for
+  // a test and seen again is one journey, ended by their last doneAt
+  const visits = done.filter(t => t.doneAt).map(t => (t.doneAt - t.createdAt) / 60000);
+  const avgVisit = visits.length ? Math.round(visits.reduce((a, b) => a + b, 0) / visits.length) : null;
 
   return {
     version: state.version,
@@ -602,13 +606,17 @@ function publicState() {
     skipped: state.tokens.filter(t => t.status === 'skipped')
       .map(t => ({ id: t.id, label: t.label, kind: t.kind, name: t.name })),
     recentDone: done.slice(-8).reverse()
-      .map(t => ({ id: t.id, label: t.label, kind: t.kind, name: t.name })),
+      .map(t => ({
+        id: t.id, label: t.label, kind: t.kind, name: t.name,
+        totalMin: t.doneAt ? Math.max(0, Math.round((t.doneAt - t.createdAt) / 60000)) : null
+      })),
     stats: {
       waiting: waiting.length,
       inRoom: state.rooms.filter(r => r.tokenId).length,
       done: done.length,
       total: state.tokens.length,
-      avgWait: avgWait
+      avgWait: avgWait,
+      avgVisit: avgVisit
     },
     canUndo: history.length > 0
   };

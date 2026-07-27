@@ -101,7 +101,7 @@
     <div style="height:16px"></div>
 
     <div class="panel">
-      <h2>Finished recently</h2>
+      <h2>Finished recently <span id="visit-avg" style="text-transform:none;letter-spacing:0;font-weight:500"></span></h2>
       <ul class="qlist" id="recent"></ul>
     </div>
   </div>
@@ -322,7 +322,10 @@ function renderList(hostId, items, opts) {
     li.innerHTML =
       '<span class="qnum num' + kindCls(t) + '">' + esc(t.label) + '</span>' +
       kindTag(t) +
-      '<span class="qname">' + (t.createdAt ? 'waiting ' + esc(CQ.waitedMinutes(t.createdAt)) : '') + '</span>' +
+      '<span class="qname">' +
+        (t.totalMin != null ? 'start to finish ' + esc(CQ.fmtMinutes(t.totalMin))
+          : t.createdAt ? 'waiting ' + esc(CQ.waitedMinutes(t.createdAt)) : '') +
+      '</span>' +
       (opts.action
         ? '<button class="mini" data-act="' + t.id + '">' + esc(opts.action) + '</button>'
         : '');
@@ -356,6 +359,9 @@ CQ.onState(s => {
   renderServices(s);
   renderList('waiting', s.waiting, { empty: 'Nobody is waiting', action: 'Remove', endpoint: '/api/skip' });
   renderList('recent', s.recentDone, { empty: 'Nobody checked yet', action: 'Bring back', endpoint: '/api/recall' });
+  $('visit-avg').textContent = s.stats.avgVisit != null
+    ? '· about ' + CQ.fmtMinutes(s.stats.avgVisit) + ' start to finish'
+    : '';
 
   $('skipped-panel').hidden = s.skipped.length === 0;
   if (s.skipped.length) {

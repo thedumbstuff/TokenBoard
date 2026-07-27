@@ -423,6 +423,8 @@ async function testReturnFromTest() {
 
   s = (await api.post(port, '/api/done', { room: 1 })).state;
   check('so the doctor sees the returning patient next', inRooms(s), ['1']);
+  check('a finished patient reports their start-to-finish time', s.recentDone[0].totalMin, 0);
+  check('and the day has an average journey time', s.stats.avgVisit, 0);
 
   // a plain test visit with no doctor attached just ends
   await api.post(port, '/api/token', { kind: 'service', service: 1 });

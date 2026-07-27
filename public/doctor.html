@@ -58,6 +58,7 @@
     <div class="stat"><b id="s-room">0</b><span>In rooms</span></div>
     <div class="stat"><b id="s-done">0</b><span>Seen</span></div>
     <div class="stat"><b id="s-avg">-</b><span>Avg wait (min)</span></div>
+    <div class="stat"><b id="s-visit">-</b><span>Start to finish (min)</span></div>
   </div>
 
   <div class="rooms" id="rooms"></div>
@@ -110,6 +111,7 @@ CQ.onState(s => {
   $('s-room').textContent = s.stats.inRoom;
   $('s-done').textContent = s.stats.done;
   $('s-avg').textContent = s.stats.avgWait == null ? '-' : s.stats.avgWait;
+  $('s-visit').textContent = s.stats.avgVisit == null ? '-' : s.stats.avgVisit;
   $('pause').textContent = s.paused ? 'Resume queue' : 'Pause queue';
   $('pause').classList.toggle('is-paused', s.paused);
 

@@ -73,12 +73,18 @@ const CQ = {
     setInterval(tick, 10000);
   },
 
+  fmtMinutes(m) {
+    if (m == null) return '';
+    if (m < 1) return 'under a minute';
+    if (m < 60) return m + ' min';
+    return Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+  },
+
   waitedMinutes(sinceMs) {
     if (!sinceMs) return '';
     const m = Math.floor((Date.now() - sinceMs) / 60000);
     if (m < 1) return 'just now';
-    if (m < 60) return m + ' min';
-    return Math.floor(m / 60) + ' h ' + (m % 60) + ' min';
+    return this.fmtMinutes(m);
   },
 
   /* short chime built in code, so no sound file is needed offline */
