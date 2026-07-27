@@ -39,7 +39,10 @@
   .d-rooms {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: 1fr;
+    /* minmax(0, 1fr), not plain 1fr: a bare 1fr still grows with content,
+       so a panel with a wide token or a "next" list would get wider than
+       its neighbours. Every room must have exactly the same width. */
+    grid-auto-columns: minmax(0, 1fr);
     gap: 3px;
     background: rgba(255, 255, 255, .12);
     min-height: 0;
@@ -54,6 +57,7 @@
     padding: 2vh 1vw;
     position: relative;
     min-height: 0;
+    min-width: 0;
   }
 
   .d-room .rname {
@@ -75,7 +79,9 @@
   .d-room .rtoken {
     font-family: var(--numeral);
     font-variant-numeric: tabular-nums;
-    font-size: clamp(70px, 15vw, 260px);
+    /* scales with how many panels share the strip (set from JS), so a
+       three-character token still fits its equal-width column */
+    font-size: clamp(56px, calc(52vw / var(--panels, 3)), 240px);
     line-height: .95;
     margin: 1.5vh 0;
   }
@@ -236,6 +242,7 @@ CQ.onState(s => {
 
   const host = $('rooms');
   host.innerHTML = '';
+  host.style.setProperty('--panels', s.rooms.length + s.services.length);
 
   for (const room of s.rooms) {
     const div = document.createElement('div');
