@@ -117,6 +117,8 @@ test.js          regression suite
 public/
   common.js      polling, API calls, chime, speech, shared render helpers
   app.css        shared styles and the colour tokens
+  icon.png       favicon / home-screen icon (the gold token tile; a committed
+                 asset, regenerate only if the brand tile changes)
   reception.html the receptionist's screen
   display.html   the waiting-room TV
   doctor.html    the doctor's phone

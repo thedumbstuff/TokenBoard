@@ -2,12 +2,29 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12263A">
 <title>Doctor - TokenBoard</title>
+<link rel="icon" href="/icon.png">
+<link rel="apple-touch-icon" href="/icon.png">
 <link rel="stylesheet" href="app.css">
 <style>
+  /* keep content out of the notch and home-indicator areas (0 elsewhere) */
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .topbar { padding-top: calc(12px + env(safe-area-inset-top)); }
+
   .doc-wrap { padding: 14px; display: grid; gap: 14px; }
   .rooms { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+  /* on the phone, sending for a test is a primary action: thumb-sized,
+     full width, clearly separated from ✓ Checked above it */
+  .room .mini {
+    width: 100%;
+    padding: 13px;
+    font-size: 17px;
+    border-radius: 12px;
+    margin-top: 8px;
+  }
   .summary { display: flex; gap: 10px; flex-wrap: wrap; }
   .stat {
     background: var(--card);

@@ -49,7 +49,8 @@ body { overflow-x: hidden; }
 .topbar {
   display: flex;
   align-items: center;
-  gap: 18px;
+  flex-wrap: wrap;          /* phones: controls flow to a second row, never clipped */
+  gap: 12px 18px;
   padding: 12px 20px;
   background: var(--ink);
   color: #fff;

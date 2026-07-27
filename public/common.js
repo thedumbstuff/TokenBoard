@@ -50,7 +50,8 @@ const CQ = {
       bar.id = 'cq-offline';
       bar.textContent = 'Not connected to the clinic system \u2014 check the black window is still open';
       bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#C0272D;color:#fff;' +
-        'padding:12px;text-align:center;font-weight:600;font-size:16px;z-index:99;display:none';
+        'padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom));' +
+        'text-align:center;font-weight:600;font-size:16px;z-index:99;display:none';
       document.body.appendChild(bar);
     }
     bar.style.display = ok ? 'none' : 'block';

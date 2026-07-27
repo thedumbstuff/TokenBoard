@@ -442,7 +442,7 @@ async function testPages() {
   const p = await start(dir, port);
 
   for (const u of ['/', '/display', '/doctor', '/settings',
-                   '/app.css', '/common.js', '/api/state', '/api/config', '/api/report.csv']) {
+                   '/app.css', '/common.js', '/icon.png', '/api/state', '/api/config', '/api/report.csv']) {
     const r = await fetch('http://127.0.0.1:' + port + u);
     check('GET ' + u, r.status, 200);
   }
