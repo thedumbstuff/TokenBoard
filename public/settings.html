@@ -72,6 +72,26 @@
     <div style="height:16px"></div>
 
     <div class="panel">
+      <h2>Test rooms (X-ray, lab, ...)</h2>
+      <div class="field" style="max-width:200px">
+        <label>How many</label>
+        <select id="svcCount">
+          <option>0</option><option>1</option><option>2</option>
+          <option>3</option><option>4</option>
+        </select>
+      </div>
+      <div id="svcrows"></div>
+      <div class="hint" style="color:var(--muted);font-size:13px">
+        Each test room runs its own queue with its own letter, e.g. X1, X2 for
+        X-ray. Numbers can be given at reception before seeing the doctor, or
+        from the doctor's phone when a test is asked for. Pick a letter that is
+        different from the urgent and booked letters above.
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
       <h2>Numbering</h2>
       <div class="two">
         <div class="field">
@@ -197,6 +217,8 @@ async function load() {
   $('language').value = cfg.language;
   $('roomCount').value = String(cfg.rooms.length);
   drawRooms(cfg.rooms);
+  $('svcCount').value = String((cfg.services || []).length);
+  drawSvcs(cfg.services || []);
   updateMix();
 }
 
@@ -261,6 +283,39 @@ function readRooms() {
   });
 }
 
+function drawSvcs(svcs) {
+  const host = $('svcrows');
+  host.innerHTML = '';
+  svcs.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'roomrow';
+    row.innerHTML =
+      '<input type="color" value="' + (s.color || '#4A5568') + '">' +
+      '<input type="text" placeholder="Name, e.g. X-ray" value="' + (s.name || '') + '">' +
+      '<input type="text" class="hi" placeholder="Hindi name" value="' + (s.nameHi || '') + '">' +
+      '<input type="text" placeholder="X" maxlength="2" style="flex:0 0 64px" value="' + (s.prefix || '') + '">';
+    host.appendChild(row);
+  });
+}
+
+$('svcCount').onchange = () => {
+  const n = Number($('svcCount').value);
+  const cur = readSvcs();
+  const palette = ['#4A5568', '#31708E', '#6B4E71', '#805B36'];
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push(cur[i] || { name: '', nameHi: '', prefix: '', color: palette[i % 4] });
+  }
+  drawSvcs(out);
+};
+
+function readSvcs() {
+  return [...document.querySelectorAll('#svcrows .roomrow')].map(row => {
+    const [c, n, h, p] = row.querySelectorAll('input');
+    return { color: c.value, name: n.value, nameHi: h.value, prefix: p.value };
+  });
+}
+
 $('save').onclick = async () => {
   const next = {
     clinicName: $('clinicName').value.trim() || 'Clinic',
@@ -275,7 +330,8 @@ $('save').onclick = async () => {
     autoAssign: $('autoAssign').checked,
     announce: $('announce').checked,
     language: $('language').value,
-    rooms: readRooms()
+    rooms: readRooms(),
+    services: readSvcs()
   };
   if ($('newPin').value.trim()) next.pin = $('newPin').value.trim();
 

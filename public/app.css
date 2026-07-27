@@ -175,6 +175,36 @@ body { overflow-x: hidden; }
   margin-top: 3px;
 }
 
+/* One per configured test room (X-ray, lab): a real button, but visibly
+   secondary to the three main issuing buttons above it. */
+.btn-svc {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  padding: 13px 16px;
+  margin-top: 10px;
+  text-align: left;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .2);
+}
+
+.btn-svc small {
+  font-family: 'Nirmala UI', var(--body);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: .85;
+}
+
+.btn-svc:active { transform: translateY(1px); }
+.btn-svc:hover { filter: brightness(1.08); }
+
 .btn-go { background: var(--go); }
 .btn-go:hover { background: var(--go-dark); }
 .btn-urgent { background: var(--urgent); }

@@ -99,6 +99,22 @@ If one group runs out, the other simply continues, and the pattern picks up
 where it left off when they turn up again. Settings shows the resulting order
 in words as you change the numbers, so there is no guesswork.
 
+### Test rooms (X-ray, lab)
+
+If the clinic has an X-ray room, a pathology lab or similar, add them in
+Settings. Each one runs **its own queue with its own letter** — X1, X2, … —
+completely separate from the doctor's queue, and appears on the waiting-room
+TV like any other room.
+
+A test number can be given two ways:
+
+- **Before seeing the doctor** — the receptionist presses the test room's
+  button, next to the three main buttons.
+- **When the doctor asks for it** — the doctor's phone has the same buttons;
+  tap, tell the patient the number, then ✓ Checked as usual.
+
+The test room keeps calling its queue even while the doctor's queue is paused.
+
 ## How patients reach a room
 
 The receptionist never chooses a room. When a room becomes free, the system sends

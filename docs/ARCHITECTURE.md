@@ -146,6 +146,24 @@ allowed — the patient inside finishes normally and the room is then not
 refilled. The flag lives in `state.rooms` so it survives a power cut, and it
 resets with the rest of the state at the day rollover.
 
+### Test rooms (services)
+
+X-ray, pathology and similar are **service stations**: `config.services`
+defines them (name, Hindi name, letter prefix, colour — same pattern as
+rooms), `state.services` holds occupancy and `state.lastService` the per-
+service counters. Service tokens live in the same `tokens` array with
+`kind: 'service'` and a `serviceId`, so undo, skip/recall, persistence and
+the CSV all cover them with no extra machinery. They are invisible to
+`orderedWaiting()` (they match none of the doctor-queue kinds), excluded
+from `stats.done`/`avgWait`, and reported in a separate `services` block of
+the view model.
+
+Each station always pulls its own queue in plain arrival order — regardless
+of the `autoAssign` setting and of Pause, which belong to the doctor's
+queue. Issuing before the doctor (reception button) and after the doctor
+asks (same button on the doctor's phone) are the same call:
+`POST /api/token {kind: 'service', service: id}`.
+
 ### Undo
 
 `snapshot()` pushes a JSON string of the whole state (capped at 30) before
@@ -163,8 +181,9 @@ No framework; a single `http.createServer` handler with an if-chain.
 | GET  | `/api/state` | full view model (see below) |
 | GET  | `/api/config` | config minus the PIN |
 | GET  | `/api/report.csv` | today's log as CSV (BOM-prefixed for Excel) |
-| POST | `/api/token` | issue a token `{kind}` |
+| POST | `/api/token` | issue a token `{kind}`; test rooms via `{kind: 'service', service}` |
 | POST | `/api/done` | free a room `{room}` |
+| POST | `/api/service-done` | free a test room `{service}` |
 | POST | `/api/call` | manual call-next into a room `{room}` |
 | POST | `/api/skip` | patient not present `{id}` |
 | POST | `/api/recall` | bring back a skipped/done patient `{id}` |

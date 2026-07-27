@@ -351,6 +351,54 @@ async function testVipReserve() {
   await stop(p);
 }
 
+async function testServices() {
+  console.log('\na test room (X-ray) with its own queue');
+  const dir = dataDir('services'), port = portCounter++;
+  writeConfig(dir, baseConfig({
+    services: [{ id: 1, name: 'X-ray', nameHi: 'एक्स-रे', prefix: 'X', color: '#334455' }]
+  }));
+  let p = await start(dir, port);
+
+  // before seeing the doctor: reception issues an X-ray number directly
+  let r = await api.post(port, '/api/token', { kind: 'service', service: 1 });
+  check('the first X-ray number is X1', r.token.label, 'X1');
+  check('and it is called straight in', r.state.services[0].token.label, 'X1');
+  let s = (await api.post(port, '/api/token', { kind: 'service', service: 1 })).state;
+  check('the second waits its turn at the test room', s.services[0].next, ['X2']);
+
+  s = (await api.post(port, '/api/token', { kind: 'normal' })).state;
+  check('the doctor queue is not disturbed', inRooms(s), ['1']);
+  check('and does not count X-ray patients as waiting', s.stats.waiting, 0);
+
+  s = (await api.post(port, '/api/service-done', { service: 1 })).state;
+  check('finishing X1 pulls X2 in', s.services[0].token.label, 'X2');
+
+  // after the doctor asks for it: the same call, made from the doctor screen
+  r = await api.post(port, '/api/token', { kind: 'service', service: 1 });
+  check('the doctor can send a patient for a test the same way', r.token.label, 'X3');
+
+  await stop(p, true);                          // power cut
+  p = await start(dir, port);
+  s = await api.get(port, '/api/state');
+  check('the test room survives a power cut mid-scan', s.services[0].token.label, 'X2');
+  check('with its queue intact', s.services[0].next, ['X3']);
+
+  const x2 = s.services[0].token.id;
+  s = (await api.post(port, '/api/skip', { id: x2 })).state;
+  check('a no-show frees the test room for the next patient', s.services[0].token.label, 'X3');
+  s = (await api.post(port, '/api/recall', { id: x2 })).state;
+  check('and can be called again later', s.services[0].next, ['X2']);
+
+  s = (await api.post(port, '/api/pause', { paused: true })).state;
+  s = (await api.post(port, '/api/service-done', { service: 1 })).state;
+  check('the X-ray keeps working through the doctor\'s break', s.services[0].token.label, 'X2');
+
+  const unknown = await api.post(port, '/api/token', { kind: 'service', service: 99 });
+  check('an unknown test room is refused', unknown.ok, false);
+
+  await stop(p);
+}
+
 async function testPages() {
   console.log('\nevery screen and endpoint responds');
   const dir = dataDir('pages'), port = portCounter++;
@@ -460,6 +508,7 @@ function testQr() {
     await testContinuousNumbering();
     await testCorrections();
     await testVipReserve();
+    await testServices();
     await testPages();
     testQr();
   } catch (err) {

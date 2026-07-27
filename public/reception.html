@@ -56,6 +56,9 @@
         </span>
       </button>
 
+      <!-- one button per test room (X-ray, lab); empty when none configured -->
+      <div id="svc-buttons"></div>
+
       <p class="hint" style="color:var(--muted);font-size:13px;margin:14px 2px 0" id="policy-note"></p>
     </div>
 
@@ -77,6 +80,11 @@
   <!-- ---------- right: rooms ---------- -->
   <div>
     <div class="rooms" id="rooms"></div>
+
+    <div id="svc-block" hidden>
+      <div style="height:16px"></div>
+      <div class="rooms" id="services"></div>
+    </div>
 
     <div style="height:16px"></div>
 
@@ -121,6 +129,20 @@ async function give(kind) {
   }
 }
 
+async function giveService(id) {
+  try {
+    const res = await CQ.post('/api/token', { kind: 'service', service: id });
+    if (res && res.token) showTicket(res.token);
+  } catch (e) {
+    alert('Could not give a number. Check the black window is still open.');
+  }
+}
+
+function serviceName(id) {
+  const svc = ((CQ.state && CQ.state.services) || []).find(x => x.id === id);
+  return svc ? svc.name : 'the test room';
+}
+
 function showTicket(token) {
   const el = $('ticket-num');
   el.textContent = token.label;
@@ -129,6 +151,7 @@ function showTicket(token) {
   $('ticket-note').textContent =
     token.kind === 'urgent' ? 'Urgent \u2014 this patient goes in next'
     : token.kind === 'appointment' ? 'Booked patient \u2014 and tell them the number'
+    : token.kind === 'service' ? 'and send the patient to ' + serviceName(token.serviceId)
     : 'and tell the patient the number';
   $('ticket-overlay').hidden = false;
   clearTimeout(ticketTimer);
@@ -221,6 +244,53 @@ function renderRooms(s) {
     b.onclick = () => CQ.post('/api/reserve', { room: Number(b.dataset.unreserve), reserved: false }));
 }
 
+function renderServiceButtons(s) {
+  const host = $('svc-buttons');
+  host.innerHTML = '';
+  for (const svc of s.services) {
+    const b = document.createElement('button');
+    b.className = 'btn-svc';
+    b.style.background = svc.color;
+    b.innerHTML = esc(svc.name) + ' number <small class="hi">' + esc(svc.nameHi) + '</small>';
+    b.onclick = () => giveService(svc.id);
+    host.appendChild(b);
+  }
+}
+
+function renderServices(s) {
+  $('svc-block').hidden = s.services.length === 0;
+  const host = $('services');
+  host.innerHTML = '';
+  for (const svc of s.services) {
+    const t = svc.token;
+    const card = document.createElement('div');
+    card.className = 'room';
+    card.innerHTML =
+      '<div class="room-head" style="background:' + esc(svc.color) + '">' +
+        '<span style="font-size:18px;font-weight:700;opacity:1">' + esc(svc.name) + '</span>' +
+        '<span class="hi">' + esc(svc.nameHi) + '</span>' +
+      '</div>' +
+      '<div class="room-body">' +
+        (t
+          ? '<div class="room-token num">' + esc(t.label) + '</div>' +
+            '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
+            '<button class="btn-done" data-svc-done="' + svc.id + '">✓ Done</button>' +
+            '<button class="mini" data-skip="' + t.id + '" style="margin-top:2px">Patient not here</button>'
+          : '<div class="room-empty">Empty</div>') +
+        '<div class="room-meta">' +
+          (svc.waitingCount
+            ? 'next: ' + svc.next.map(esc).join(', ') + (svc.waitingCount > svc.next.length ? ' …' : '')
+            : 'nobody waiting') +
+        '</div>' +
+      '</div>';
+    host.appendChild(card);
+  }
+  host.querySelectorAll('[data-svc-done]').forEach(b =>
+    b.onclick = () => CQ.post('/api/service-done', { service: Number(b.dataset.svcDone) }));
+  host.querySelectorAll('[data-skip]').forEach(b =>
+    b.onclick = () => CQ.post('/api/skip', { id: Number(b.dataset.skip) }));
+}
+
 function renderList(hostId, items, opts) {
   const host = $(hostId);
   host.innerHTML = '';
@@ -263,6 +333,8 @@ CQ.onState(s => {
         : 'Booked patients and walk-ins then take turns.');
 
   renderRooms(s);
+  renderServiceButtons(s);
+  renderServices(s);
   renderList('waiting', s.waiting, { empty: 'Nobody is waiting', action: 'Remove', endpoint: '/api/skip' });
   renderList('recent', s.recentDone, { empty: 'Nobody checked yet', action: 'Bring back', endpoint: '/api/recall' });
 

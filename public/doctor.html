@@ -45,6 +45,14 @@
 
   <div class="rooms" id="rooms"></div>
 
+  <!-- issue a test-room number mid-consult: tap, tell the patient, ✓ Checked -->
+  <div class="panel" id="svc-panel" hidden>
+    <h2>Send for a test</h2>
+    <div id="svc-buttons"></div>
+    <div id="svc-result" class="num" style="font-size:44px;text-align:center;min-height:0"></div>
+    <div id="svc-note" style="text-align:center;color:var(--muted)"></div>
+  </div>
+
   <div class="panel">
     <h2>Waiting outside</h2>
     <ul class="qlist" id="waiting"></ul>
@@ -67,6 +75,36 @@ function esc(s) {
 
 $('pause').onclick = () => CQ.post('/api/pause', { paused: !(CQ.state && CQ.state.paused) });
 
+let svcButtonsDrawn = '';
+
+async function giveService(svc) {
+  const res = await CQ.post('/api/token', { kind: 'service', service: svc.id });
+  if (res && res.token) {
+    $('svc-result').textContent = res.token.label;
+    $('svc-note').textContent = 'tell the patient, then go to ' + svc.name;
+  }
+}
+
+function renderServicePanel(s) {
+  $('svc-panel').hidden = s.services.length === 0;
+  // the buttons only depend on settings, so redraw only when those change
+  const key = JSON.stringify(s.services.map(x => [x.id, x.name, x.color]));
+  if (key === svcButtonsDrawn) return;
+  svcButtonsDrawn = key;
+  const host = $('svc-buttons');
+  host.innerHTML = '';
+  $('svc-result').textContent = '';
+  $('svc-note').textContent = '';
+  for (const svc of s.services) {
+    const b = document.createElement('button');
+    b.className = 'btn-svc';
+    b.style.background = svc.color;
+    b.innerHTML = esc(svc.name) + ' number <small class="hi">' + esc(svc.nameHi) + '</small>';
+    b.onclick = () => giveService(svc);
+    host.appendChild(b);
+  }
+}
+
 CQ.onState(s => {
   $('clinic').textContent = s.clinicName;
   $('doctor').textContent = s.doctorName;
@@ -76,6 +114,7 @@ CQ.onState(s => {
   $('s-avg').textContent = s.stats.avgWait == null ? '-' : s.stats.avgWait;
   $('pause').textContent = s.paused ? 'Resume queue' : 'Pause queue';
   $('pause').classList.toggle('is-paused', s.paused);
+  renderServicePanel(s);
 
   const host = $('rooms');
   host.innerHTML = '';

@@ -257,6 +257,31 @@ CQ.onState(s => {
     }
     known[room.id] = label;
   }
+
+  // test rooms (X-ray, lab) share the grid: same panels, own queues
+  for (const svc of s.services) {
+    const div = document.createElement('div');
+    div.className = 'd-room';
+    div.style.background = svc.color;
+    const t = svc.token;
+    div.innerHTML =
+      '<div class="rname">' + esc(svc.name) + '</div>' +
+      '<div class="rname-hi">' + esc(svc.nameHi) + '</div>' +
+      (t ? '<div class="rtoken">' + esc(t.label) + '</div>'
+         : '<div class="rempty">—</div>') +
+      (svc.next.length
+        ? '<div class="rname-hi">next: ' + svc.next.map(esc).join('  ') + '</div>'
+        : '');
+    host.appendChild(div);
+
+    const key = 'svc' + svc.id;
+    const label = t ? t.label : null;
+    if (!firstPaint && label && known[key] !== label) {
+      div.classList.add('flash');
+      announce(svc, label, s.language);
+    }
+    known[key] = label;
+  }
   firstPaint = false;
 
   const nx = $('next');

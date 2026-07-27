@@ -71,6 +71,11 @@ const DEFAULT_CONFIG = {
     { id: 2, name: 'Room 2', nameHi: 'कक्ष 2', color: '#2C4A9A' },
     { id: 3, name: 'Room 3', nameHi: 'कक्ष 3', color: '#7A2E6B' }
   ],
+  // Test rooms (X-ray, pathology, ...). Each has its own queue and its own
+  // number series (X1, X2, ...), issued before or after seeing the doctor.
+  // Empty by default: a clinic without them sees no change anywhere.
+  services: [],
+
   startNumber: 1,        // first walk-in token of each morning
   resetDaily: true,      // false = counter never resets, runs forever
   urgentPrefix: 'E',     // urgent tokens look like E1, E2, ...
@@ -96,6 +101,7 @@ let config = Object.assign({}, DEFAULT_CONFIG, loadJson(CONFIG_FILE, {}));
 if (!Array.isArray(config.rooms) || config.rooms.length === 0) {
   config.rooms = DEFAULT_CONFIG.rooms;
 }
+if (!Array.isArray(config.services)) config.services = [];
 saveAtomic(CONFIG_FILE, config);
 
 /* ------------------------------------------------------------------ *
@@ -126,6 +132,8 @@ function freshState(day, carry) {
     cyclePos: 0,
     tokens: [],
     rooms: config.rooms.map(r => ({ id: r.id, tokenId: null, reserved: false })),
+    services: config.services.map(s => ({ id: s.id, tokenId: null })),
+    lastService: carry.services || {},   // serviceId -> last number issued
     paused: false
   };
 }
@@ -148,7 +156,7 @@ function loadTodayState() {
         .pop();
       if (prev) {
         const p = loadJson(path.join(DATA_DIR, prev), null);
-        if (p) carry = { normal: p.lastNormal, urgent: p.lastUrgent, appt: p.lastAppt };
+        if (p) carry = { normal: p.lastNormal, urgent: p.lastUrgent, appt: p.lastAppt, services: p.lastService };
       }
     }
     s = freshState(day, carry);
@@ -159,11 +167,15 @@ function loadTodayState() {
   if (s.lastAppt == null) s.lastAppt = config.apptStartNumber - 1;
   if (!s.served) s.served = { appointment: 0, normal: 0 };
   if (s.cyclePos == null) s.cyclePos = 0;
+  if (!s.lastService) s.lastService = {};
 
   // reconcile rooms if the doctor changed room count in Settings
   const byId = new Map((s.rooms || []).map(r => [r.id, r]));
   s.rooms = config.rooms.map(r => byId.get(r.id) || { id: r.id, tokenId: null, reserved: false });
   for (const room of s.rooms) if (room.reserved == null) room.reserved = false;
+
+  const svcById = new Map((s.services || []).map(x => [x.id, x]));
+  s.services = config.services.map(sc => svcById.get(sc.id) || { id: sc.id, tokenId: null });
 
   return s;
 }
@@ -199,7 +211,7 @@ function rollDayIfNeeded() {
   if (state.date === day) return;
   archiveToCsv(state);
   const carry = config.resetDaily ? null
-    : { normal: state.lastNormal, urgent: state.lastUrgent, appt: state.lastAppt };
+    : { normal: state.lastNormal, urgent: state.lastUrgent, appt: state.lastAppt, services: state.lastService };
   state = freshState(day, carry);
   history = [];
   persist();
@@ -216,6 +228,41 @@ function labelFor(kind, n) {
   if (kind === 'urgent') return config.urgentPrefix + n;
   if (kind === 'appointment') return config.apptPrefix + n;
   return String(n);
+}
+
+/* A number for a test room. Outside the doctor's queue entirely: its own
+   series, its own station, issued before the doctor or when the doctor
+   asks for the test - the mechanics are the same either way. */
+function issueServiceToken(serviceId, name) {
+  rollDayIfNeeded();
+  const svc = config.services.find(s => s.id === Number(serviceId));
+  if (!svc) return null;
+  snapshot();
+  if (state.lastService[svc.id] == null) state.lastService[svc.id] = 0;
+  const num = ++state.lastService[svc.id];
+  const token = {
+    id: state.nextId++,
+    kind: 'service',
+    serviceId: svc.id,
+    number: num,
+    label: (svc.prefix || 'S') + num,
+    name: (name || '').trim().slice(0, 40),
+    status: 'waiting',
+    room: null,
+    createdAt: Date.now(),
+    calledAt: null,
+    doneAt: null
+  };
+  state.tokens.push(token);
+  autoAssign();
+  persist();
+  return token;
+}
+
+function serviceWaiting(serviceId) {
+  return state.tokens
+    .filter(t => t.kind === 'service' && t.serviceId === serviceId && t.status === 'waiting')
+    .sort((a, b) => a.id - b.id);
 }
 
 function issueToken(kind, name) {
@@ -327,12 +374,24 @@ function callInto(roomId, token) {
 }
 
 function autoAssign() {
-  if (!config.autoAssign || state.paused) return;
-  for (const room of state.rooms) {
-    if (room.tokenId || room.reserved) continue;
-    const next = orderedWaiting()[0];
-    if (!next) break;
-    callInto(room.id, next);
+  if (config.autoAssign && !state.paused) {
+    for (const room of state.rooms) {
+      if (room.tokenId || room.reserved) continue;
+      const next = orderedWaiting()[0];
+      if (!next) break;
+      callInto(room.id, next);
+    }
+  }
+  // Test rooms always pull their own queue, in arrival order, even while the
+  // doctor's queue is paused: the X-ray keeps working through the lunch break.
+  // They never touch the fair-share cycle - that belongs to the doctor's queue.
+  for (const st of state.services) {
+    if (st.tokenId) continue;
+    const next = serviceWaiting(st.id)[0];
+    if (!next) continue;
+    next.status = 'in_room';
+    next.calledAt = Date.now();
+    st.tokenId = next.id;
   }
 }
 
@@ -357,6 +416,19 @@ function markDone(roomId) {
   persist();
 }
 
+function markServiceDone(serviceId) {
+  rollDayIfNeeded();
+  snapshot();
+  const st = state.services.find(s => s.id === Number(serviceId));
+  if (st && st.tokenId) {
+    const t = state.tokens.find(x => x.id === st.tokenId);
+    if (t) { t.status = 'done'; t.doneAt = Date.now(); }
+    st.tokenId = null;
+  }
+  autoAssign();
+  persist();
+}
+
 function skipToken(tokenId) {
   rollDayIfNeeded();
   snapshot();
@@ -366,6 +438,8 @@ function skipToken(tokenId) {
       const room = state.rooms.find(r => r.id === t.room);
       if (room && room.tokenId === t.id) room.tokenId = null;
     }
+    const st = state.services.find(s => s.tokenId === t.id);
+    if (st) st.tokenId = null;
     t.status = 'skipped';
     t.room = null;
   }
@@ -429,7 +503,9 @@ function publicState() {
   rollDayIfNeeded();
   const byId = new Map(state.tokens.map(t => [t.id, t]));
   const waiting = orderedWaiting();
-  const done = state.tokens.filter(t => t.status === 'done');
+  // "done" and the average wait mean the doctor's queue; test rooms are
+  // reported separately in the services block below
+  const done = state.tokens.filter(t => t.status === 'done' && t.kind !== 'service');
   const waits = done.filter(t => t.calledAt).map(t => (t.calledAt - t.createdAt) / 60000);
   const avgWait = waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) : null;
 
@@ -455,6 +531,21 @@ function publicState() {
         color: rc.color || '#2C4A9A',
         reserved: !!rs.reserved,
         token: t ? { id: t.id, label: t.label, kind: t.kind, name: t.name, calledAt: t.calledAt } : null
+      };
+    }),
+    services: config.services.map(sc => {
+      const st = state.services.find(x => x.id === sc.id) || { tokenId: null };
+      const t = st.tokenId ? byId.get(st.tokenId) : null;
+      const queue = serviceWaiting(sc.id);
+      return {
+        id: sc.id,
+        name: sc.name,
+        nameHi: sc.nameHi || sc.name,
+        color: sc.color || '#4A5568',
+        prefix: sc.prefix,
+        token: t ? { id: t.id, label: t.label, calledAt: t.calledAt } : null,
+        next: queue.slice(0, 3).map(x => x.label),
+        waitingCount: queue.length
       };
     }),
     waiting: waiting.map(t => ({ id: t.id, label: t.label, kind: t.kind, name: t.name, createdAt: t.createdAt })),
@@ -556,10 +647,14 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
 
       if (p === '/api/token') {
-        const t = issueToken(body.kind, body.name);
+        const t = body.kind === 'service'
+          ? issueServiceToken(body.service, body.name)
+          : issueToken(body.kind, body.name);
+        if (!t) return sendJson(res, 200, { ok: false, error: 'No such test room' });
         return sendJson(res, 200, { ok: true, token: t, state: publicState() });
       }
       if (p === '/api/done') { markDone(Number(body.room)); return sendJson(res, 200, { ok: true, state: publicState() }); }
+      if (p === '/api/service-done') { markServiceDone(Number(body.service)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/call') { callNextInto(Number(body.room)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/skip') { skipToken(Number(body.id)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/recall') { recallToken(Number(body.id)); return sendJson(res, 200, { ok: true, state: publicState() }); }
@@ -590,7 +685,7 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 403, { ok: false, error: 'Wrong PIN' });
         }
         const incoming = body.config || {};
-        const allowed = ['clinicName', 'doctorName', 'rooms', 'startNumber', 'resetDaily',
+        const allowed = ['clinicName', 'doctorName', 'rooms', 'services', 'startNumber', 'resetDaily',
           'urgentPrefix', 'urgentStartNumber', 'apptPrefix', 'apptStartNumber',
           'queuePolicy', 'mixAppointment', 'mixWalkIn',
           'autoAssign', 'announce', 'language', 'pin'];
@@ -604,6 +699,14 @@ const server = http.createServer(async (req, res) => {
           nameHi: (r.nameHi || r.name || ('कक्ष ' + (i + 1))).slice(0, 24),
           color: /^#[0-9a-fA-F]{6}$/.test(r.color || '') ? r.color : '#2C4A9A'
         }));
+        config.services = (Array.isArray(config.services) ? config.services : [])
+          .slice(0, 4).map((s, i) => ({
+            id: i + 1,
+            name: (s.name || ('Test room ' + (i + 1))).slice(0, 24),
+            nameHi: (s.nameHi || s.name || '').slice(0, 24),
+            prefix: (String(s.prefix || '').trim().toUpperCase().slice(0, 2)) || 'S',
+            color: /^#[0-9a-fA-F]{6}$/.test(s.color || '') ? s.color : '#4A5568'
+          }));
         saveAtomic(CONFIG_FILE, config);
 
         // free any room that no longer exists
@@ -616,6 +719,17 @@ const server = http.createServer(async (req, res) => {
         }
         const byId = new Map(state.rooms.map(r => [r.id, r]));
         state.rooms = config.rooms.map(r => byId.get(r.id) || { id: r.id, tokenId: null });
+
+        // same for test rooms: a patient inside a removed one rejoins its queue
+        const svcIds = new Set(config.services.map(s => s.id));
+        for (const st of state.services) {
+          if (!svcIds.has(st.id) && st.tokenId) {
+            const t = state.tokens.find(x => x.id === st.tokenId);
+            if (t) t.status = 'waiting';
+          }
+        }
+        const svcById = new Map(state.services.map(s => [s.id, s]));
+        state.services = config.services.map(s => svcById.get(s.id) || { id: s.id, tokenId: null });
         autoAssign();
         persist();
         return sendJson(res, 200, { ok: true });
