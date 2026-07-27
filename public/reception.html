@@ -81,12 +81,9 @@
 
   <!-- ---------- right: rooms ---------- -->
   <div>
+    <!-- consultation rooms and test rooms share one grid so every card
+         gets the same width regardless of how many of each there are -->
     <div class="rooms" id="rooms"></div>
-
-    <div id="svc-block" hidden>
-      <div style="height:16px"></div>
-      <div class="rooms" id="services"></div>
-    </div>
 
     <div style="height:16px"></div>
 
@@ -269,9 +266,7 @@ function renderServiceButtons(s) {
 }
 
 function renderServices(s) {
-  $('svc-block').hidden = s.services.length === 0;
-  const host = $('services');
-  host.innerHTML = '';
+  const host = $('rooms');   // appended after the room cards, same grid
   for (const svc of s.services) {
     const t = svc.token;
     const card = document.createElement('div');
