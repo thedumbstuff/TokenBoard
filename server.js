@@ -837,6 +837,22 @@ function lanAddresses() {
 }
 
 const PORT = Number(process.env.PORT || config.port || 8080);
+
+// The common cause is a second copy already running in another window.
+// Say that in clinic language instead of dying with a stack trace; the
+// launcher's retry loop takes over once the other window is closed.
+server.on('error', err => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.log('');
+    console.log('  TokenBoard is already running in another window.');
+    console.log('  Close this window and use the one that is already open.');
+    console.log('  (If you cannot find it, restart the computer and start again.)');
+    console.log('');
+    process.exit(1);
+  }
+  throw err;
+});
+
 server.listen(PORT, '0.0.0.0', () => {
   try { archivePendingDays(); } catch (e) { console.warn('[warn] archive catch-up: ' + e.message); }
   const lan = lanAddresses();

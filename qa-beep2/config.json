@@ -1,0 +1,39 @@
+{
+  "clinicName": "City Care Clinic",
+  "doctorName": "Dr. Sharma",
+  "rooms": [
+    {
+      "id": 1,
+      "name": "Room 1",
+      "nameHi": "कक्ष 1",
+      "color": "#0B6E77"
+    },
+    {
+      "id": 2,
+      "name": "Room 2",
+      "nameHi": "कक्ष 2",
+      "color": "#2C4A9A"
+    },
+    {
+      "id": 3,
+      "name": "Room 3",
+      "nameHi": "कक्ष 3",
+      "color": "#7A2E6B"
+    }
+  ],
+  "services": [],
+  "startNumber": 1,
+  "resetDaily": true,
+  "urgentPrefix": "E",
+  "urgentStartNumber": 1,
+  "apptPrefix": "A",
+  "apptStartNumber": 1,
+  "queuePolicy": "mix",
+  "mixAppointment": 1,
+  "mixWalkIn": 1,
+  "autoAssign": true,
+  "announce": true,
+  "language": "both",
+  "port": 8080,
+  "pin": "1234"
+}

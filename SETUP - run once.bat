@@ -21,13 +21,13 @@ rem ---- desktop shortcut -------------------------------------------------
 powershell -NoProfile -Command ^
   "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\TokenBoard.lnk');" ^
   "$s.TargetPath='%~dp0START CLINIC.bat'; $s.WorkingDirectory='%~dp0';" ^
-  "$s.IconLocation='%SystemRoot%\System32\shell32.dll,177'; $s.Save()" >nul 2>nul
+  "$s.IconLocation='%~dp0public\icon.ico,0'; $s.Save()" >nul 2>nul
 if errorlevel 1 (echo   [!] Could not create the desktop shortcut.) else (echo   [OK] Desktop shortcut "TokenBoard" created.)
 
 rem ---- start automatically when Windows starts ---------------------------
 powershell -NoProfile -Command ^
   "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Startup')+'\TokenBoard.lnk');" ^
-  "$s.TargetPath='%~dp0START CLINIC.bat'; $s.WorkingDirectory='%~dp0'; $s.Save()" >nul 2>nul
+  "$s.TargetPath='%~dp0START CLINIC.bat'; $s.WorkingDirectory='%~dp0'; $s.IconLocation='%~dp0public\icon.ico,0'; $s.Save()" >nul 2>nul
 if errorlevel 1 (echo   [!] Could not set auto-start.) else (echo   [OK] Will start automatically after a power cut / reboot.)
 
 rem ---- allow phones on the same WiFi to reach it -------------------------

@@ -119,6 +119,7 @@ public/
   app.css        shared styles and the colour tokens
   icon.png       favicon / home-screen icon (the gold token tile; a committed
                  asset, regenerate only if the brand tile changes)
+  icon.ico       same art for the Windows desktop shortcut (SETUP points at it)
   reception.html the receptionist's screen
   display.html   the waiting-room TV
   doctor.html    the doctor's phone

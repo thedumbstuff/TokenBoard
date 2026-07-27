@@ -1,0 +1,34 @@
+{
+  "date": "2026-07-27",
+  "version": 1,
+  "nextId": 1,
+  "lastNormal": 0,
+  "lastUrgent": 0,
+  "lastAppt": 0,
+  "served": {
+    "appointment": 0,
+    "normal": 0
+  },
+  "cyclePos": 0,
+  "tokens": [],
+  "rooms": [
+    {
+      "id": 1,
+      "tokenId": null,
+      "reserved": false
+    },
+    {
+      "id": 2,
+      "tokenId": null,
+      "reserved": false
+    },
+    {
+      "id": 3,
+      "tokenId": null,
+      "reserved": false
+    }
+  ],
+  "services": [],
+  "lastService": {},
+  "paused": false
+}
