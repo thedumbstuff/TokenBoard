@@ -105,17 +105,44 @@ const CQ = {
     } catch (e) { /* audio is a nicety, never fatal */ }
   },
 
+  /* The voice list loads asynchronously and is often empty on the first
+     call, so grab it early and again on voiceschanged. */
+  _voices: [],
+
+  _loadVoices() {
+    if (!window.speechSynthesis) return;
+    const grab = () => { this._voices = window.speechSynthesis.getVoices() || []; };
+    grab();
+    window.speechSynthesis.addEventListener('voiceschanged', grab);
+  },
+
+  voiceFor(lang) {
+    const want = String(lang || '').toLowerCase();
+    const norm = v => String(v.lang || '').replace('_', '-').toLowerCase();
+    return this._voices.find(v => norm(v) === want) ||
+           this._voices.find(v => norm(v).slice(0, 2) === want.slice(0, 2)) || null;
+  },
+
   speak(text, lang) {
     try {
       if (!window.speechSynthesis) return;
       const u = new SpeechSynthesisUtterance(text);
       u.lang = lang || 'en-IN';
+      // Browsers do not reliably match u.lang to an installed voice by
+      // themselves: Chrome hands Hindi text to the default English voice,
+      // which cannot render Devanagari and stays silent. Pick the closest
+      // installed voice ourselves; with none installed there is nothing to
+      // pick, and Settings warns about that.
+      const v = this.voiceFor(u.lang);
+      if (v) u.voice = v;
       u.rate = 0.85;
       u.volume = 1;
       window.speechSynthesis.speak(u);
     } catch (e) { /* ignore */ }
   }
 };
+
+try { CQ._loadVoices(); } catch (e) { /* speech is a nicety */ }
 
 /* Digits spoken one by one are far easier to catch across a noisy room:
    "one zero five" rather than "one hundred and five". */

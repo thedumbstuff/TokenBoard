@@ -125,6 +125,10 @@ The receptionist never chooses a room. When a room becomes free, the system send
 the next person in automatically and the waiting-room screen shows the number on
 that room's colour panel, with a chime and a spoken announcement in Hindi and English.
 
+The Hindi voice comes from Windows itself: if Hindi announcements are silent, add
+the **Hindi** language with **Text-to-speech** in Windows Settings and restart the
+browser. The Settings screen shows a warning when the voice is missing.
+
 Stick a coloured paper on each door matching the colour in Settings. A patient who
 cannot read "Room 2" can still match the colour.
 

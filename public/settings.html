@@ -169,6 +169,7 @@
           <option value="hi">Hindi only</option>
           <option value="en">English only</option>
         </select>
+        <div class="hint" id="voice-hint" style="color:var(--amber);max-width:420px"></div>
       </div>
       <div class="field" style="max-width:200px">
         <label>Change PIN</label>
@@ -316,6 +317,22 @@ function readSvcs() {
     const [c, n, h, p] = row.querySelectorAll('input');
     return { color: c.value, name: n.value, nameHi: h.value, prefix: p.value };
   });
+}
+
+/* Hindi announcements need a Hindi voice installed in Windows. Say so here,
+   with the fix, rather than letting the TV stay mysteriously silent. */
+function voiceHint() {
+  const vs = window.speechSynthesis.getVoices();
+  if (!vs.length) return;   // list not loaded yet; voiceschanged will re-run us
+  const hasHi = vs.some(v => /^hi([-_]|$)/i.test(String(v.lang)));
+  $('voice-hint').textContent = hasHi ? '' :
+    'No Hindi voice is installed on this computer, so Hindi announcements ' +
+    'will be silent. In Windows Settings, add the Hindi language with ' +
+    '"Text-to-speech", then restart the browser.';
+}
+if (window.speechSynthesis) {
+  window.speechSynthesis.addEventListener('voiceschanged', voiceHint);
+  voiceHint();
 }
 
 $('save').onclick = async () => {
