@@ -198,7 +198,7 @@
 
 <div class="startup" id="startup">
   <h2>Touch the screen to start</h2>
-  <p>This turns on the announcement voice</p>
+  <p>This turns on the sound</p>
 </div>
 
 <script src="common.js"></script>
@@ -222,15 +222,16 @@ function esc(s) {
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-function announce(room, label, lang) {
+function announce(room, label, s) {
   if (!soundOn) return;
   CQ.chime();
+  if (!s.announce) return;   // "beep only": the chime is the announcement
   const spelled = CQ.spellOut(label);
   setTimeout(() => {
-    if (lang === 'hi' || lang === 'both') {
+    if (s.language === 'hi' || s.language === 'both') {
       CQ.speak('टोकन नंबर ' + spelled + '. कृपया ' + room.nameHi + ' में जाएं.', 'hi-IN');
     }
-    if (lang === 'en' || lang === 'both') {
+    if (s.language === 'en' || s.language === 'both') {
       CQ.speak('Token number ' + spelled + '. Please go to ' + room.name + '.', 'en-IN');
     }
   }, 700);
@@ -263,7 +264,7 @@ CQ.onState(s => {
     const label = t ? t.label : null;
     if (!firstPaint && label && known[room.id] !== label) {
       div.classList.add('flash');
-      announce(room, label, s.language);
+      announce(room, label, s);
     }
     known[room.id] = label;
   }
@@ -288,7 +289,7 @@ CQ.onState(s => {
     const label = t ? t.label : null;
     if (!firstPaint && label && known[key] !== label) {
       div.classList.add('flash');
-      announce(svc, label, s.language);
+      announce(svc, label, s);
     }
     known[key] = label;
   }

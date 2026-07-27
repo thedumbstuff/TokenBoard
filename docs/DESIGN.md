@@ -97,7 +97,9 @@ configurable per room rather than fixed by the stylesheet.
 
 **Announcements are bilingual and digit-by-digit.** "Token number one zero
 five" carries across a noisy room where "one hundred and five" does not.
-Hindi, English, or both, per the clinic's setting.
+Hindi, English, both, or beep-only, per the clinic's setting — the chime
+always plays, because a sound cue that makes people look up at the screen
+is the announcement's real job; the voice is on top of that.
 
 ## Queue fairness
 

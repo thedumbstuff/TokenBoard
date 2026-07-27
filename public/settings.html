@@ -156,19 +156,15 @@
           Send the next patient into a room automatically when it becomes free
         </label>
       </div>
-      <div class="check">
-        <input type="checkbox" id="announce">
-        <label for="announce" style="margin:0;text-transform:none;letter-spacing:0;font-size:16px;color:var(--ink)">
-          Announce the number out loud on the waiting-room screen
-        </label>
-      </div>
       <div class="field" style="max-width:260px">
-        <label>Announcement language</label>
+        <label>Announcement on the TV</label>
         <select id="language">
           <option value="both">Hindi and English</option>
           <option value="hi">Hindi only</option>
           <option value="en">English only</option>
+          <option value="beep">Beep only (no voice)</option>
         </select>
+        <div class="hint">Every option includes the chime; "Beep only" skips the spoken part.</div>
         <div class="hint" id="voice-hint" style="color:var(--amber);max-width:420px"></div>
       </div>
       <div class="field" style="max-width:200px">
@@ -216,8 +212,9 @@ async function load() {
   $('mixWalkIn').value = cfg.mixWalkIn || 1;
   $('resetDaily').checked = !!cfg.resetDaily;
   $('autoAssign').checked = !!cfg.autoAssign;
-  $('announce').checked = !!cfg.announce;
-  $('language').value = cfg.language;
+  // "beep only" is stored as announce:false, so old config files map cleanly
+  $('language').value = cfg.announce === false ? 'beep' : cfg.language;
+  voiceHint();
   $('roomCount').value = String(cfg.rooms.length);
   drawRooms(cfg.rooms);
   $('svcCount').value = String((cfg.services || []).length);
@@ -320,20 +317,23 @@ function readSvcs() {
 }
 
 /* Hindi announcements need a Hindi voice installed in Windows. Say so here,
-   with the fix, rather than letting the TV stay mysteriously silent. */
+   with the fix, rather than letting the TV stay mysteriously silent - but
+   only when the chosen option actually speaks Hindi. */
 function voiceHint() {
+  if (!window.speechSynthesis) return;
   const vs = window.speechSynthesis.getVoices();
   if (!vs.length) return;   // list not loaded yet; voiceschanged will re-run us
+  const wantsHindi = $('language').value === 'both' || $('language').value === 'hi';
   const hasHi = vs.some(v => /^hi([-_]|$)/i.test(String(v.lang)));
-  $('voice-hint').textContent = hasHi ? '' :
+  $('voice-hint').textContent = (wantsHindi && !hasHi) ?
     'No Hindi voice is installed on this computer, so Hindi announcements ' +
     'will be silent. In Windows Settings, add the Hindi language with ' +
-    '"Text-to-speech", then restart the browser.';
+    '"Text-to-speech", then restart the browser.' : '';
 }
 if (window.speechSynthesis) {
   window.speechSynthesis.addEventListener('voiceschanged', voiceHint);
-  voiceHint();
 }
+$('language').addEventListener('change', voiceHint);
 
 $('save').onclick = async () => {
   const next = {
@@ -347,8 +347,12 @@ $('save').onclick = async () => {
     mixWalkIn: Math.max(1, Number($('mixWalkIn').value) || 1),
     resetDaily: $('resetDaily').checked,
     autoAssign: $('autoAssign').checked,
-    announce: $('announce').checked,
-    language: $('language').value,
+    // the select folds voice on/off and language into one choice; keep the
+    // last real language when "beep only" is picked so it can be restored
+    announce: $('language').value !== 'beep',
+    language: $('language').value === 'beep'
+      ? ((cfg.language && cfg.language !== 'beep') ? cfg.language : 'both')
+      : $('language').value,
     rooms: readRooms(),
     services: readSvcs()
   };
