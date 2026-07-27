@@ -134,6 +134,11 @@ function kindCls(t) {
 
 function kindTag(t) {
   if (!t) return '';
+  if (t.returning) {
+    const from = String(t.returnedFrom || 'test').replace(/[&<>"]/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    return '<span class="tag is-return">Back from ' + from + '</span>';
+  }
   if (t.kind === 'urgent') return '<span class="tag">Urgent</span>';
   if (t.kind === 'appointment') return '<span class="tag is-appt">Booked</span>';
   return '';

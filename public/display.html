@@ -123,6 +123,7 @@
 
   .nextlist span.is-urgent { background: var(--urgent); }
   .nextlist span.is-appt { background: var(--appt); }
+  .nextlist span.is-return { background: var(--amber); }
 
   /* Missed numbers: dashed outline, deliberately quieter than the solid
      "next" pills - these patients need to see their number and go back to
@@ -289,6 +290,7 @@ CQ.onState(s => {
   s.waiting.slice(0, 8).forEach(t => {
     const sp = document.createElement('span');
     if (t.kind === 'urgent') sp.className = 'is-urgent';
+    else if (t.returning) sp.className = 'is-return';
     else if (t.kind === 'appointment') sp.className = 'is-appt';
     sp.textContent = t.label;
     nx.appendChild(sp);

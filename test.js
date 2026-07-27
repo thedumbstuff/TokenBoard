@@ -399,6 +399,42 @@ async function testServices() {
   await stop(p);
 }
 
+async function testReturnFromTest() {
+  console.log('\nback from the X-ray, the doctor sees them next');
+  const dir = dataDir('return'), port = portCounter++;
+  writeConfig(dir, baseConfig({
+    services: [{ id: 1, name: 'X-ray', nameHi: 'एक्स-रे', prefix: 'X', color: '#334455' }]
+  }));
+  const p = await start(dir, port);
+
+  for (let i = 0; i < 3; i++) await api.post(port, '/api/token', { kind: 'normal' });
+  let s = await api.get(port, '/api/state');
+  check('patient 1 is with the doctor', inRooms(s), ['1']);
+
+  const r = await api.post(port, '/api/send-test', { room: 1, service: 1 });
+  check('sending for a test issues a linked number', r.token.label, 'X1');
+  s = r.state;
+  check('the freed room moves on to the next patient', inRooms(s), ['2']);
+  check('the X-ray calls the sent patient straight in', s.services[0].token.label, 'X1');
+
+  s = (await api.post(port, '/api/service-done', { service: 1 })).state;
+  check('back from the X-ray they head the queue', labels(s), ['1', '3']);
+  ok('and the screen can say why', s.waiting[0].returning && s.waiting[0].returnedFrom === 'X-ray');
+
+  s = (await api.post(port, '/api/done', { room: 1 })).state;
+  check('so the doctor sees the returning patient next', inRooms(s), ['1']);
+
+  // a plain test visit with no doctor attached just ends
+  await api.post(port, '/api/token', { kind: 'service', service: 1 });
+  s = (await api.post(port, '/api/service-done', { service: 1 })).state;
+  check('a walk-in test does not join the doctor queue', labels(s), ['3']);
+
+  const bad = await api.post(port, '/api/send-test', { room: 1, service: 9 });
+  check('sending to an unknown test room is refused', bad.ok, false);
+
+  await stop(p);
+}
+
 async function testPages() {
   console.log('\nevery screen and endpoint responds');
   const dir = dataDir('pages'), port = portCounter++;
@@ -509,6 +545,7 @@ function testQr() {
     await testCorrections();
     await testVipReserve();
     await testServices();
+    await testReturnFromTest();
     await testPages();
     testQr();
   } catch (err) {

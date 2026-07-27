@@ -164,6 +164,15 @@ queue. Issuing before the doctor (reception button) and after the doctor
 asks (same button on the doctor's phone) are the same call:
 `POST /api/token {kind: 'service', service: id}`.
 
+**Returning to the doctor.** `/api/send-test {room, service}` is the linked
+variant: one action (and one undo) frees the room, issues a test token that
+records the doctor token in `returnTo`. When the station finishes that token,
+the linked doctor token is put back to `waiting` with `returning: true`,
+which `orderedWaiting()` sorts directly behind urgent — and `callInto()`
+clears the flag without touching the fair-share cycle, because a
+continuation is not a new turn. Both halves of that rule live in the same
+two functions that must always agree.
+
 ### Undo
 
 `snapshot()` pushes a JSON string of the whole state (capped at 30) before
@@ -183,7 +192,8 @@ No framework; a single `http.createServer` handler with an if-chain.
 | GET  | `/api/report.csv` | today's log as CSV (BOM-prefixed for Excel) |
 | POST | `/api/token` | issue a token `{kind}`; test rooms via `{kind: 'service', service}` |
 | POST | `/api/done` | free a room `{room}` |
-| POST | `/api/service-done` | free a test room `{service}` |
+| POST | `/api/service-done` | free a test room `{service}`; returns any linked patient to the doctor queue |
+| POST | `/api/send-test` | send the patient in a room for a test `{room, service}` |
 | POST | `/api/call` | manual call-next into a room `{room}` |
 | POST | `/api/skip` | patient not present `{id}` |
 | POST | `/api/recall` | bring back a skipped/done patient `{id}` |

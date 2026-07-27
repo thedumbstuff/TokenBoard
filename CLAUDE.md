@@ -75,6 +75,9 @@ id on load and whenever settings are saved. Do not merge them.
 per-service counters in `state.lastService`. Service tokens share the tokens
 array (`kind: 'service'`) but are outside the doctor's queue: invisible to
 `orderedWaiting()`, unaffected by pause, always served in arrival order.
+A send from a room (`/api/send-test`) links the test token via `returnTo`;
+finishing it puts the doctor token back at the front (`returning: true`,
+behind urgent, outside the fair-share pattern - see the callInto guard).
 
 **Old state files must keep loading.** `loadTodayState()` has guards like
 `if (s.lastAppt == null)`. A clinic may upgrade mid-week with a live file on

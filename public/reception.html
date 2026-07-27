@@ -213,6 +213,9 @@ function renderRooms(s) {
             '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
             '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>' +
             '<button class="mini" data-skip="' + t.id + '" style="margin-top:2px">Patient not here</button>' +
+            s.services.map(sv =>
+              '<button class="mini" data-send="' + room.id + ':' + sv.id + '">\u2192 ' + esc(sv.name) + '</button>'
+            ).join('') +
             (room.reserved
               ? '<div class="room-vip" style="font-size:14px">Then kept for VIP</div>' +
                 '<button class="mini" data-unreserve="' + room.id + '">Available again</button>'
@@ -242,6 +245,12 @@ function renderRooms(s) {
     b.onclick = () => CQ.post('/api/reserve', { room: Number(b.dataset.reserve), reserved: true }));
   host.querySelectorAll('[data-unreserve]').forEach(b =>
     b.onclick = () => CQ.post('/api/reserve', { room: Number(b.dataset.unreserve), reserved: false }));
+  host.querySelectorAll('[data-send]').forEach(b =>
+    b.onclick = async () => {
+      const [roomId, svcId] = b.dataset.send.split(':').map(Number);
+      const r = await CQ.post('/api/send-test', { room: roomId, service: svcId });
+      if (r && r.token) showTicket(r.token);
+    });
 }
 
 function renderServiceButtons(s) {

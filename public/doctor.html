@@ -45,13 +45,8 @@
 
   <div class="rooms" id="rooms"></div>
 
-  <!-- issue a test-room number mid-consult: tap, tell the patient, ✓ Checked -->
-  <div class="panel" id="svc-panel" hidden>
-    <h2>Send for a test</h2>
-    <div id="svc-buttons"></div>
-    <div id="svc-result" class="num" style="font-size:44px;text-align:center;min-height:0"></div>
-    <div id="svc-note" style="text-align:center;color:var(--muted)"></div>
-  </div>
+  <!-- shows the test number just issued, so the doctor can tell the patient -->
+  <div class="panel" id="sent-note" hidden style="text-align:center"></div>
 
   <div class="panel">
     <h2>Waiting outside</h2>
@@ -75,33 +70,19 @@ function esc(s) {
 
 $('pause').onclick = () => CQ.post('/api/pause', { paused: !(CQ.state && CQ.state.paused) });
 
-let svcButtonsDrawn = '';
-
-async function giveService(svc) {
-  const res = await CQ.post('/api/token', { kind: 'service', service: svc.id });
-  if (res && res.token) {
-    $('svc-result').textContent = res.token.label;
-    $('svc-note').textContent = 'tell the patient, then go to ' + svc.name;
-  }
-}
-
-function renderServicePanel(s) {
-  $('svc-panel').hidden = s.services.length === 0;
-  // the buttons only depend on settings, so redraw only when those change
-  const key = JSON.stringify(s.services.map(x => [x.id, x.name, x.color]));
-  if (key === svcButtonsDrawn) return;
-  svcButtonsDrawn = key;
-  const host = $('svc-buttons');
-  host.innerHTML = '';
-  $('svc-result').textContent = '';
-  $('svc-note').textContent = '';
-  for (const svc of s.services) {
-    const b = document.createElement('button');
-    b.className = 'btn-svc';
-    b.style.background = svc.color;
-    b.innerHTML = esc(svc.name) + ' number <small class="hi">' + esc(svc.nameHi) + '</small>';
-    b.onclick = () => giveService(svc);
-    host.appendChild(b);
+/* Send the patient in a room for a test: frees the room, issues a linked
+   number, and when the test room finishes they come back to the doctor next. */
+async function sendForTest(roomId, svcId) {
+  const r = await CQ.post('/api/send-test', { room: roomId, service: svcId });
+  if (r && r.token) {
+    const svc = (CQ.state.services || []).find(x => x.id === svcId) || {};
+    const note = $('sent-note');
+    note.hidden = false;
+    note.innerHTML = '<span class="num" style="font-size:38px">' + esc(r.token.label) + '</span>' +
+      '<div style="color:var(--muted)">tell the patient — go to ' + esc(svc.name || 'the test room') +
+      ', they come back to you next</div>';
+    clearTimeout(note._t);
+    note._t = setTimeout(() => { note.hidden = true; }, 20000);
   }
 }
 
@@ -114,7 +95,6 @@ CQ.onState(s => {
   $('s-avg').textContent = s.stats.avgWait == null ? '-' : s.stats.avgWait;
   $('pause').textContent = s.paused ? 'Resume queue' : 'Pause queue';
   $('pause').classList.toggle('is-paused', s.paused);
-  renderServicePanel(s);
 
   const host = $('rooms');
   host.innerHTML = '';
@@ -130,7 +110,10 @@ CQ.onState(s => {
         (t
           ? '<div class="room-token num' + kindCls(t) + '">' + esc(t.label) + '</div>' +
             '<div class="room-meta">inside ' + esc(CQ.waitedMinutes(t.calledAt)) + '</div>' +
-            '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>'
+            '<button class="btn-done" data-done="' + room.id + '">\u2713 Checked</button>' +
+            s.services.map(sv =>
+              '<button class="mini" data-send="' + room.id + ':' + sv.id + '">\u2192 ' + esc(sv.name) + '</button>'
+            ).join('')
           : room.reserved
             ? '<div class="room-empty room-vip">Reserved for VIP</div>'
             : '<div class="room-empty">Empty</div>') +
@@ -139,6 +122,11 @@ CQ.onState(s => {
   }
   host.querySelectorAll('[data-done]').forEach(b =>
     b.onclick = () => CQ.post('/api/done', { room: Number(b.dataset.done) }));
+  host.querySelectorAll('[data-send]').forEach(b =>
+    b.onclick = () => {
+      const [roomId, svcId] = b.dataset.send.split(':').map(Number);
+      sendForTest(roomId, svcId);
+    });
 
   const w = $('waiting');
   w.innerHTML = '';

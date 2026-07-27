@@ -233,11 +233,7 @@ function labelFor(kind, n) {
 /* A number for a test room. Outside the doctor's queue entirely: its own
    series, its own station, issued before the doctor or when the doctor
    asks for the test - the mechanics are the same either way. */
-function issueServiceToken(serviceId, name) {
-  rollDayIfNeeded();
-  const svc = config.services.find(s => s.id === Number(serviceId));
-  if (!svc) return null;
-  snapshot();
+function makeServiceToken(svc, name, returnTo) {
   if (state.lastService[svc.id] == null) state.lastService[svc.id] = 0;
   const num = ++state.lastService[svc.id];
   const token = {
@@ -247,6 +243,7 @@ function issueServiceToken(serviceId, name) {
     number: num,
     label: (svc.prefix || 'S') + num,
     name: (name || '').trim().slice(0, 40),
+    returnTo: returnTo || null,   // doctor token to bring back when the test is done
     status: 'waiting',
     room: null,
     createdAt: Date.now(),
@@ -254,6 +251,34 @@ function issueServiceToken(serviceId, name) {
     doneAt: null
   };
   state.tokens.push(token);
+  return token;
+}
+
+function issueServiceToken(serviceId, name) {
+  rollDayIfNeeded();
+  const svc = config.services.find(s => s.id === Number(serviceId));
+  if (!svc) return null;
+  snapshot();
+  const token = makeServiceToken(svc, name, null);
+  autoAssign();
+  persist();
+  return token;
+}
+
+/* The doctor sends the patient in a room for a test. One action - and one
+   undo - frees the room, issues a linked test number, and remembers who to
+   bring back to the doctor when the test room finishes with them. */
+function sendForTest(roomId, serviceId) {
+  rollDayIfNeeded();
+  const room = state.rooms.find(r => r.id === Number(roomId));
+  const svc = config.services.find(s => s.id === Number(serviceId));
+  if (!room || !room.tokenId || !svc) return null;
+  snapshot();
+  const patient = state.tokens.find(x => x.id === room.tokenId);
+  patient.status = 'done';
+  patient.doneAt = Date.now();
+  room.tokenId = null;
+  const token = makeServiceToken(svc, patient.name, patient.id);
   autoAssign();
   persist();
   return token;
@@ -326,10 +351,13 @@ function orderedWaiting() {
   const waiting = state.tokens.filter(t => t.status === 'waiting');
 
   const urgent = waiting.filter(t => t.kind === 'urgent').sort(byArrival);
-  const appt = waiting.filter(t => t.kind === 'appointment').sort(byArrival);
-  const walk = waiting.filter(t => t.kind === 'normal').sort(byArrival);
+  // back from a test the doctor ordered: next in line, right behind urgent -
+  // their consultation is a continuation, not a new turn
+  const returning = waiting.filter(t => t.kind !== 'urgent' && t.returning).sort(byArrival);
+  const appt = waiting.filter(t => t.kind === 'appointment' && !t.returning).sort(byArrival);
+  const walk = waiting.filter(t => t.kind === 'normal' && !t.returning).sort(byArrival);
 
-  const out = urgent.slice();
+  const out = urgent.concat(returning);
 
   if (config.queuePolicy === 'arrival') {
     return out.concat(appt.concat(walk).sort(byArrival));
@@ -367,10 +395,16 @@ function callInto(roomId, token) {
   token.room = roomId;
   token.calledAt = Date.now();
   room.tokenId = token.id;
-  // emergencies are outside the fair-share arrangement
-  if (token.kind === 'appointment') state.served.appointment++;
-  else if (token.kind === 'normal') state.served.normal++;
-  advanceCycle(token.kind);
+  if (token.returning) {
+    // a continuation after a test: like urgent, outside the fair-share
+    // arrangement - it must not consume a pattern slot
+    token.returning = false;
+  } else {
+    // emergencies are outside the fair-share arrangement
+    if (token.kind === 'appointment') state.served.appointment++;
+    else if (token.kind === 'normal') state.served.normal++;
+    advanceCycle(token.kind);
+  }
 }
 
 function autoAssign() {
@@ -422,7 +456,20 @@ function markServiceDone(serviceId) {
   const st = state.services.find(s => s.id === Number(serviceId));
   if (st && st.tokenId) {
     const t = state.tokens.find(x => x.id === st.tokenId);
-    if (t) { t.status = 'done'; t.doneAt = Date.now(); }
+    if (t) {
+      t.status = 'done';
+      t.doneAt = Date.now();
+      // a patient the doctor sent: bring their original number back to the
+      // front of the doctor's queue - the consultation is being continued
+      const back = t.returnTo != null ? state.tokens.find(x => x.id === t.returnTo) : null;
+      if (back && back.status !== 'in_room') {
+        back.status = 'waiting';
+        back.room = null;
+        back.doneAt = null;
+        back.returning = true;
+        back.returnedFrom = (config.services.find(sc => sc.id === t.serviceId) || { name: 'test' }).name;
+      }
+    }
     st.tokenId = null;
   }
   autoAssign();
@@ -548,7 +595,10 @@ function publicState() {
         waitingCount: queue.length
       };
     }),
-    waiting: waiting.map(t => ({ id: t.id, label: t.label, kind: t.kind, name: t.name, createdAt: t.createdAt })),
+    waiting: waiting.map(t => ({
+      id: t.id, label: t.label, kind: t.kind, name: t.name, createdAt: t.createdAt,
+      returning: !!t.returning, returnedFrom: t.returnedFrom || null
+    })),
     skipped: state.tokens.filter(t => t.status === 'skipped')
       .map(t => ({ id: t.id, label: t.label, kind: t.kind, name: t.name })),
     recentDone: done.slice(-8).reverse()
@@ -655,6 +705,11 @@ const server = http.createServer(async (req, res) => {
       }
       if (p === '/api/done') { markDone(Number(body.room)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/service-done') { markServiceDone(Number(body.service)); return sendJson(res, 200, { ok: true, state: publicState() }); }
+      if (p === '/api/send-test') {
+        const t = sendForTest(body.room, body.service);
+        if (!t) return sendJson(res, 200, { ok: false, error: 'No patient in that room' });
+        return sendJson(res, 200, { ok: true, token: t, state: publicState() });
+      }
       if (p === '/api/call') { callNextInto(Number(body.room)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/skip') { skipToken(Number(body.id)); return sendJson(res, 200, { ok: true, state: publicState() }); }
       if (p === '/api/recall') { recallToken(Number(body.id)); return sendJson(res, 200, { ok: true, state: publicState() }); }

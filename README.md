@@ -110,8 +110,12 @@ A test number can be given two ways:
 
 - **Before seeing the doctor** — the receptionist presses the test room's
   button, next to the three main buttons.
-- **When the doctor asks for it** — the doctor's phone has the same buttons;
-  tap, tell the patient the number, then ✓ Checked as usual.
+- **When the doctor asks for it** — every occupied room card (on the doctor's
+  phone and at reception) has a **→ X-ray** button. One tap frees the room,
+  gives the patient a linked test number, and — this is the point — **when the
+  test room finishes with them, their original number goes straight back to
+  the front of the doctor's queue**, so the doctor sees them next. The screen
+  shows why: an amber *"Back from X-ray"* tag.
 
 The test room keeps calling its queue even while the doctor's queue is paused.
 

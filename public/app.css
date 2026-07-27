@@ -216,6 +216,7 @@ body { overflow-x: hidden; }
    second, faster cue on top of it. */
 .room-token.is-appt, .qnum.is-appt, .ticket .big.is-appt { color: var(--appt); }
 .tag.is-appt { background: var(--appt); }
+.tag.is-return { background: var(--amber); }
 
 .btn-done {
   width: 100%;
