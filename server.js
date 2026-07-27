@@ -522,13 +522,15 @@ function undo() {
  * ------------------------------------------------------------------ */
 
 function csvFor(s) {
-  const head = 'token,type,name,issued_at,called_at,done_at,room,wait_minutes,status\n';
+  const head = 'token,type,name,issued_at,called_at,done_at,room,wait_minutes,total_minutes,status\n';
   const rows = s.tokens.map(t => {
     const wait = t.calledAt ? Math.round((t.calledAt - t.createdAt) / 60000) : '';
+    // the whole visit, number issued -> finally finished
+    const total = t.doneAt ? Math.round((t.doneAt - t.createdAt) / 60000) : '';
     const fmt = ms => ms ? new Date(ms).toLocaleTimeString('en-GB') : '';
     const safe = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
     return [safe(t.label), t.kind, safe(t.name), fmt(t.createdAt), fmt(t.calledAt),
-      fmt(t.doneAt), t.room == null ? '' : t.room, wait, t.status].join(',');
+      fmt(t.doneAt), t.room == null ? '' : t.room, wait, total, t.status].join(',');
   });
   return head + rows.join('\n') + '\n';
 }

@@ -448,6 +448,9 @@ async function testPages() {
     const r = await fetch('http://127.0.0.1:' + port + u);
     check('GET ' + u, r.status, 200);
   }
+  const csv = await (await fetch('http://127.0.0.1:' + port + '/api/report.csv')).text();
+  ok('the report carries per-patient total time', csv.includes('total_minutes'));
+
   const bad = await fetch('http://127.0.0.1:' + port + '/../server.js');
   ok('the server does not serve files outside public/', bad.status >= 400);
 

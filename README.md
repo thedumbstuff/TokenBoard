@@ -180,7 +180,8 @@ ever closed by mistake, double-click the desktop icon again — nothing is lost.
 
 Nothing needs to be done. The day is saved automatically and a spreadsheet is
 written to `data\archive\YYYY-MM-DD.csv`, which opens in Excel and shows every
-patient, their waiting time and which room they were seen in.
+patient, their waiting time, their total time from number to finish, and which
+room they were seen in.
 
 The doctor's screen has a **Download today's list** button for the current day.
 
