@@ -7,6 +7,19 @@
 <title>Reception - TokenBoard</title>
 <link rel="icon" href="/icon.png">
 <link rel="stylesheet" href="app.css">
+<style>
+  /* Reception's header carries the most controls of any screen. Compact
+     them below ~1500px so the row still fits the common 1366px clinic
+     monitor on one line; the shared flex-wrap remains the fallback. */
+  @media (max-width: 1500px) {
+    .topbar { gap: 10px 12px; }
+    .topbar h1 { font-size: 17px; }
+    .pill { padding: 5px 10px; font-size: 13px; }
+    .pill b { font-size: 15px; }
+    .topbar .btn-ghost { font-size: 13px; padding: 8px 10px; }
+    .brand { font-size: 15px; }
+  }
+</style>
 </head>
 <body>
 
@@ -21,7 +34,7 @@
   <div class="pill" id="clock">--:--</div>
   <button class="btn btn-ghost" id="undo">Undo last</button>
   <button class="btn btn-ghost" id="pause">Pause queue</button>
-  <a class="btn btn-ghost" href="/display" target="_blank" rel="noopener">Waiting-room screen</a>
+  <a class="btn btn-ghost" href="/display" target="_blank" rel="noopener">TV screen</a>
   <a class="btn btn-ghost" href="/settings">Settings</a>
   <div class="brand"><span class="brand-tile">1</span><span class="brand-name">Token<span class="accent">Board</span></span></div>
 </div>
