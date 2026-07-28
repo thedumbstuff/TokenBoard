@@ -17,6 +17,10 @@ if errorlevel 1 (
 )
 for /f "tokens=*" %%v in ('node --version') do echo   [OK] Node.js %%v found.
 
+rem ---- remove shortcuts left from when this was called Clinic Queue -----
+rem (an old startup shortcut next to the new one starts two copies at boot)
+powershell -NoProfile -Command "foreach ($f in 'Desktop','Startup') { Remove-Item ([Environment]::GetFolderPath($f) + '\Clinic Queue.lnk') -ErrorAction SilentlyContinue }" >nul 2>nul
+
 rem ---- desktop shortcut -------------------------------------------------
 powershell -NoProfile -Command ^
   "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\TokenBoard.lnk');" ^

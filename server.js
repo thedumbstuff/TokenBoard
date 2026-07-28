@@ -858,7 +858,7 @@ server.on('error', err => {
     console.log('  Close this window and use the one that is already open.');
     console.log('  (If you cannot find it, restart the computer and start again.)');
     console.log('');
-    process.exit(1);
+    process.exit(2);   // START CLINIC.bat reads 2 as "already running": no restart loop
   }
   throw err;
 });
