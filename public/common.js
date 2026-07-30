@@ -136,11 +136,14 @@ const CQ = {
       u.lang = lang || 'en-IN';
       // Browsers do not reliably match u.lang to an installed voice by
       // themselves: Chrome hands Hindi text to the default English voice,
-      // which cannot render Devanagari and stays silent. Pick the closest
-      // installed voice ourselves; with none installed there is nothing to
-      // pick, and Settings warns about that.
+      // which skips the Devanagari words but reads the embedded digits -
+      // "टोकन नंबर 1 0 4 ... कक्ष 1" comes out as a baffling "one zero
+      // four... one". Pick the closest installed voice ourselves, and if
+      // the language has no voice at all, say nothing: silence beats
+      // stray numbers. Settings warns about the missing voice pack.
       const v = this.voiceFor(u.lang);
       if (v) u.voice = v;
+      else if (this._voices.length) return;
       u.rate = 0.85;
       u.volume = 1;
       window.speechSynthesis.speak(u);
