@@ -16,10 +16,10 @@
     grid-template-rows: auto 1fr auto auto;
   }
 
-  /* rotating queue-etiquette quotes; a calm strip above the footer */
+  /* rotating queue-etiquette quotes; a calm strip at the very bottom */
   .d-quote {
     text-align: center;
-    padding: 1.4vh 6vw;
+    padding: 1.4vh 6vw 1.8vh;
     border-top: 1px solid rgba(255, 255, 255, .12);
   }
 
@@ -213,17 +213,17 @@
 
   <div class="d-rooms" id="rooms"></div>
 
-  <div class="d-quote" id="quote" hidden>
-    <div class="q-hi" id="quote-hi"></div>
-    <div class="q-en" id="quote-en"></div>
-  </div>
-
   <div class="d-foot">
     <div class="cap">Next<br>अगला</div>
     <div class="nextlist" id="next"></div>
     <div class="cap" id="missed-cap" hidden>Missed<br>छूटे</div>
     <div class="missedlist" id="missed" hidden></div>
     <div class="waitcount" id="waitcount"></div>
+  </div>
+
+  <div class="d-quote" id="quote" hidden>
+    <div class="q-hi" id="quote-hi"></div>
+    <div class="q-en" id="quote-en"></div>
   </div>
 </div>
 
