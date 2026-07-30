@@ -192,12 +192,30 @@ The doctor's screen has a **Download today's list** button for the current day.
 
 ---
 
+## Updating
+
+Right-click **`UPDATE - run as admin.bat`** → **Run as administrator**. It looks
+for the new version in this order:
+
+1. A folder called `update` inside the TokenBoard folder — for a PC with no
+   internet: someone brings the new files on a USB stick and copies them there.
+2. `git pull`, if the folder is a git checkout and git is installed.
+3. Downloaded straight from GitHub, if the PC is online.
+
+The script stops the system, keeps the old version in `backup\<date>`, brings in
+the new files, runs the full self-check suite, **puts the old version back by
+itself if the check fails**, and starts TokenBoard again. The `data\` folder —
+numbers, settings, archives — is never touched by any of this.
+
+---
+
 ## Files
 
 ```
 TokenBoard\
   START CLINIC.bat        <- the one to run
   SETUP - run once.bat    <- first-time install
+  UPDATE - run as admin.bat <- brings in a new version, keeps a backup
   open-screens.bat        <- helper, runs by itself
   server.js               <- the whole system (no libraries used)
   public\                 <- the four screens
