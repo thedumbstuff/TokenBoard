@@ -98,6 +98,12 @@ body { overflow-x: hidden; }
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18);
 }
 
+.brand .brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
 .brand .brand-name {
   font-family: var(--display);
   font-weight: 700;
@@ -106,6 +112,15 @@ body { overflow-x: hidden; }
 }
 
 .brand .brand-name .accent { color: #F7C948; }
+
+.brand .brand-sub {
+  font-family: var(--body);
+  font-size: .55em;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: #9DB2C4;
+  margin-top: .12em;
+}
 
 .pill {
   background: rgba(255, 255, 255, 0.12);
