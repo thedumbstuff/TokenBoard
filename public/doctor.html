@@ -97,7 +97,7 @@ async function sendForTest(roomId, svcId) {
     const note = $('sent-note');
     note.hidden = false;
     note.innerHTML = '<span class="num" style="font-size:38px">' + esc(r.token.label) + '</span>' +
-      '<div style="color:var(--muted)">tell the patient — go to ' + esc(svc.name || 'the test room') +
+      '<div style="color:var(--muted)">tell the patient - go to ' + esc(svc.name || 'the test room') +
       ', they come back to you next</div>';
     clearTimeout(note._t);
     note._t = setTimeout(() => { note.hidden = true; }, 20000);

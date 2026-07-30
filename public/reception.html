@@ -161,8 +161,8 @@ function showTicket(token) {
   el.classList.toggle('is-urgent', token.kind === 'urgent');
   el.classList.toggle('is-appt', token.kind === 'appointment');
   $('ticket-note').textContent =
-    token.kind === 'urgent' ? 'Urgent \u2014 this patient goes in next'
-    : token.kind === 'appointment' ? 'Booked patient \u2014 and tell them the number'
+    token.kind === 'urgent' ? 'Urgent - this patient goes in next'
+    : token.kind === 'appointment' ? 'Booked patient - and tell them the number'
     : token.kind === 'service' ? 'and send the patient to ' + serviceName(token.serviceId)
     : 'and tell the patient the number';
   $('ticket-overlay').hidden = false;

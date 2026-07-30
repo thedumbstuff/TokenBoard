@@ -289,7 +289,7 @@ CQ.onState(s => {
       (t ? '<div class="rtoken">' + esc(t.label) + '</div>'
          : room.reserved
            ? '<div class="rempty">Unavailable<br>\u0905\u0928\u0941\u092a\u0932\u092c\u094d\u0927</div>'
-           : '<div class="rempty">\u2014</div>');
+           : '<div class="rempty">-</div>');
     host.appendChild(div);
 
     const label = t ? t.label : null;
@@ -310,7 +310,7 @@ CQ.onState(s => {
       '<div class="rname">' + esc(svc.name) + '</div>' +
       '<div class="rname-hi">' + esc(svc.nameHi) + '</div>' +
       (t ? '<div class="rtoken">' + esc(t.label) + '</div>'
-         : '<div class="rempty">—</div>') +
+         : '<div class="rempty">-</div>') +
       (svc.next.length
         ? '<div class="rname-hi">next: ' + svc.next.map(esc).join('  ') + '</div>'
         : '');
@@ -337,7 +337,7 @@ CQ.onState(s => {
     nx.appendChild(sp);
   });
   if (!s.waiting.length) {
-    nx.innerHTML = '<span style="background:none;opacity:.5">\u2014</span>';
+    nx.innerHTML = '<span style="background:none;opacity:.5">-</span>';
   }
 
   // patients who did not answer their call: show the most recent few so
