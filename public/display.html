@@ -13,7 +13,33 @@
   .screen {
     height: 100vh;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: auto 1fr auto auto;
+  }
+
+  /* rotating queue-etiquette quotes; a calm strip above the footer */
+  .d-quote {
+    text-align: center;
+    padding: 1.4vh 6vw;
+    border-top: 1px solid rgba(255, 255, 255, .12);
+  }
+
+  .d-quote .q-hi {
+    font-family: 'Nirmala UI', sans-serif;
+    font-size: clamp(15px, 1.9vw, 28px);
+    color: #E8EEF4;
+  }
+
+  .d-quote .q-en {
+    font-size: clamp(12px, 1.3vw, 20px);
+    color: #9DB2C4;
+    margin-top: 3px;
+  }
+
+  .d-quote.swap { animation: quoteIn .9s ease; }
+
+  @keyframes quoteIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
   }
 
   .d-head {
@@ -187,6 +213,11 @@
 
   <div class="d-rooms" id="rooms"></div>
 
+  <div class="d-quote" id="quote" hidden>
+    <div class="q-hi" id="quote-hi"></div>
+    <div class="q-en" id="quote-en"></div>
+  </div>
+
   <div class="d-foot">
     <div class="cap">Next<br>अगला</div>
     <div class="nextlist" id="next"></div>
@@ -324,6 +355,52 @@ CQ.onState(s => {
   $('waitcount').textContent = s.stats.waiting + ' waiting'
     + (s.stats.avgWait != null ? '  \u00B7  about ' + s.stats.avgWait + ' min wait' : '');
 });
+
+/* Rotating quotes: gentle reasons to trust the queue, plus practical tips.
+   Hindi carries the message; English sits under it. Edit freely - this list
+   is the whole feature, nothing else to configure. */
+const QUOTES = [
+  { hi: 'हर किसी की बारी आती है — कतार सबके साथ न्याय करती है।',
+    en: 'Everyone gets their turn — the queue is fair to all.' },
+  { hi: 'आपका नंबर ही आपकी जगह है — इसे कोई नहीं ले सकता।',
+    en: 'Your number holds your place. It cannot be taken.' },
+  { hi: 'शांत प्रतीक्षालय में डॉक्टर हर मरीज़ को बेहतर देखभाल दे पाते हैं।',
+    en: 'A calm waiting room helps the doctor care better for everyone.' },
+  { hi: 'गंभीर मरीज़ पहले जाते हैं — कल यह ज़रूरत आपके अपनों की भी हो सकती है।',
+    en: 'Urgent patients go first — one day it could be someone you love.' },
+  { hi: 'यह स्क्रीन हमेशा सही क्रम दिखाती है — काउंटर पर पूछने की ज़रूरत नहीं।',
+    en: 'This screen always shows the true order — no need to ask at the desk.' },
+  { hi: 'दरवाज़े पर खड़े होने से कतार तेज़ नहीं चलती।',
+    en: 'Standing at the door does not make the line move faster.' },
+  { hi: 'कतार में धैर्य, अंदर बैठे मरीज़ की देखभाल है।',
+    en: 'Patience in the queue is care for the patient inside.' },
+  { hi: 'नंबर पुकारे जाने पर कमरे का रंग आपको रास्ता दिखाएगा।',
+    en: 'When your number is called, the room’s colour shows you the way.' },
+  { hi: 'बारी छूट गई? काउंटर पर बताइए — आपका नंबर वापस आ जाएगा।',
+    en: 'Missed your call? Tell the desk — your number comes back.' },
+  { hi: 'एक के साथ न्याय, सबके साथ न्याय — यही कतार का वादा है।',
+    en: 'Fair to one, fair to all — that is the promise of the queue.' }
+];
+
+const QUOTE_MS = 3 * 60 * 1000;   // one quote every three minutes
+let quoteShown = -1;
+
+function rotateQuote() {
+  // derived from the clock, so it survives reloads and every TV agrees
+  const idx = Math.floor(Date.now() / QUOTE_MS) % QUOTES.length;
+  if (idx === quoteShown) return;
+  quoteShown = idx;
+  const box = $('quote');
+  box.hidden = false;
+  box.classList.remove('swap');
+  void box.offsetWidth;             // restart the animation
+  $('quote-hi').textContent = QUOTES[idx].hi;
+  $('quote-en').textContent = QUOTES[idx].en;
+  box.classList.add('swap');
+}
+
+rotateQuote();
+setInterval(rotateQuote, 15000);
 
 CQ.clock('clock');
 CQ.start(1500);
