@@ -10,6 +10,9 @@
 <style>
   .set-wrap { max-width: 780px; margin: 22px auto; padding: 0 16px; display: grid; gap: 16px; }
   .roomrow { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+  .quoterow { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+  .quoterow > div { flex: 1; }
+  .quoterow input { width: 100%; margin-bottom: 6px; }
   .roomrow input[type="text"] { flex: 1; }
   .roomrow input[type="color"] { width: 54px; height: 44px; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -149,6 +152,24 @@
     <div style="height:16px"></div>
 
     <div class="panel">
+      <h2>Waiting-room quotes</h2>
+      <div class="check">
+        <input type="checkbox" id="quotesEnabled">
+        <label for="quotesEnabled" style="margin:0;text-transform:none;letter-spacing:0;font-size:16px;color:var(--ink)">
+          Show a quote on the waiting-room screen every few minutes
+        </label>
+      </div>
+      <div id="quoterows"></div>
+      <button class="btn" id="addQuote" style="font-size:14px;padding:9px 14px">+ Add a quote</button>
+      <div class="hint" style="color:var(--muted);font-size:13px;margin-top:8px">
+        Hindi on top, English below it — the screen shows both. Leave one blank
+        to show only the other language.
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="panel">
       <h2>Behaviour</h2>
       <div class="check">
         <input type="checkbox" id="autoAssign">
@@ -219,6 +240,8 @@ async function load() {
   drawRooms(cfg.rooms);
   $('svcCount').value = String((cfg.services || []).length);
   drawSvcs(cfg.services || []);
+  $('quotesEnabled').checked = cfg.quotesEnabled !== false;
+  drawQuotes(cfg.quotes || []);
   updateMix();
 }
 
@@ -316,6 +339,41 @@ function readSvcs() {
   });
 }
 
+function escAttr(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function drawQuotes(list) {
+  const host = $('quoterows');
+  host.innerHTML = '';
+  list.forEach(q => {
+    const row = document.createElement('div');
+    row.className = 'quoterow';
+    row.innerHTML =
+      '<div>' +
+        '<input type="text" class="hi" maxlength="160" placeholder="हिन्दी" value="' + escAttr(q.hi) + '">' +
+        '<input type="text" maxlength="160" placeholder="English" value="' + escAttr(q.en) + '">' +
+      '</div>' +
+      '<button class="mini" type="button" title="Remove this quote">✕</button>';
+    row.querySelector('button').onclick = () => row.remove();
+    host.appendChild(row);
+  });
+}
+
+$('addQuote').onclick = () => {
+  drawQuotes(readQuotes().concat({ hi: '', en: '' }));
+  const rows = document.querySelectorAll('#quoterows .quoterow');
+  rows[rows.length - 1].querySelector('input').focus();
+};
+
+function readQuotes() {
+  return [...document.querySelectorAll('#quoterows .quoterow')].map(row => {
+    const [hi, en] = row.querySelectorAll('input');
+    return { hi: hi.value.trim(), en: en.value.trim() };
+  }).filter(q => q.hi || q.en);
+}
+
 /* Hindi announcements need a Hindi voice installed in Windows. Say so here,
    with the fix, rather than letting the TV stay mysteriously silent - but
    only when the chosen option actually speaks Hindi. */
@@ -354,7 +412,9 @@ $('save').onclick = async () => {
       ? ((cfg.language && cfg.language !== 'beep') ? cfg.language : 'both')
       : $('language').value,
     rooms: readRooms(),
-    services: readSvcs()
+    services: readSvcs(),
+    quotesEnabled: $('quotesEnabled').checked,
+    quotes: readQuotes()
   };
   if ($('newPin').value.trim()) next.pin = $('newPin').value.trim();
 

@@ -129,8 +129,8 @@ chime still plays, nothing is spoken.
 
 The waiting-room screen also rotates a short bilingual quote every few minutes —
 gentle reasons to trust the queue ("urgent patients go first", "your number holds
-your place"). To change the quotes, edit the `QUOTES` list near the bottom of
-`public\display.html` in Notepad; the list is the whole feature.
+your place"). Settings has the switch to turn them off and Hindi/English boxes to
+reword, remove or add quotes (up to 20); the ten standard ones are the starting set.
 
 The Hindi voice comes from Windows itself: if Hindi announcements are silent, add
 the **Hindi** language with **Text-to-speech** in Windows Settings and restart the

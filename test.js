@@ -451,6 +451,16 @@ async function testPages() {
   const csv = await (await fetch('http://127.0.0.1:' + port + '/api/report.csv')).text();
   ok('the report carries per-patient total time', csv.includes('total_minutes'));
 
+  let s = await api.get(port, '/api/state');
+  ok('the standard quotes ship enabled', s.quotesEnabled && s.quotes.length === 10);
+  await api.post(port, '/api/config', {
+    pin: '1234',
+    config: { quotesEnabled: false, quotes: [{ hi: 'क', en: 'a' }, { hi: '', en: '' }] }
+  });
+  s = await api.get(port, '/api/state');
+  ok('quotes can be switched off and edited in Settings',
+    s.quotesEnabled === false && s.quotes.length === 1 && s.quotes[0].en === 'a');
+
   const bad = await fetch('http://127.0.0.1:' + port + '/../server.js');
   ok('the server does not serve files outside public/', bad.status >= 400);
 

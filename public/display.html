@@ -357,50 +357,33 @@ CQ.onState(s => {
 });
 
 /* Rotating quotes: gentle reasons to trust the queue, plus practical tips.
-   Hindi carries the message; English sits under it. Edit freely - this list
-   is the whole feature, nothing else to configure. */
-const QUOTES = [
-  { hi: 'हर किसी की बारी आती है — कतार सबके साथ न्याय करती है।',
-    en: 'Everyone gets their turn — the queue is fair to all.' },
-  { hi: 'आपका नंबर ही आपकी जगह है — इसे कोई नहीं ले सकता।',
-    en: 'Your number holds your place. It cannot be taken.' },
-  { hi: 'शांत प्रतीक्षालय में डॉक्टर हर मरीज़ को बेहतर देखभाल दे पाते हैं।',
-    en: 'A calm waiting room helps the doctor care better for everyone.' },
-  { hi: 'गंभीर मरीज़ पहले जाते हैं — कल यह ज़रूरत आपके अपनों की भी हो सकती है।',
-    en: 'Urgent patients go first — one day it could be someone you love.' },
-  { hi: 'यह स्क्रीन हमेशा सही क्रम दिखाती है — काउंटर पर पूछने की ज़रूरत नहीं।',
-    en: 'This screen always shows the true order — no need to ask at the desk.' },
-  { hi: 'दरवाज़े पर खड़े होने से कतार तेज़ नहीं चलती।',
-    en: 'Standing at the door does not make the line move faster.' },
-  { hi: 'कतार में धैर्य, अंदर बैठे मरीज़ की देखभाल है।',
-    en: 'Patience in the queue is care for the patient inside.' },
-  { hi: 'नंबर पुकारे जाने पर कमरे का रंग आपको रास्ता दिखाएगा।',
-    en: 'When your number is called, the room’s colour shows you the way.' },
-  { hi: 'बारी छूट गई? काउंटर पर बताइए — आपका नंबर वापस आ जाएगा।',
-    en: 'Missed your call? Tell the desk — your number comes back.' },
-  { hi: 'एक के साथ न्याय, सबके साथ न्याय — यही कतार का वादा है।',
-    en: 'Fair to one, fair to all — that is the promise of the queue.' }
-];
-
+   The list and the on/off switch live in Settings; this only renders. */
 const QUOTE_MS = 3 * 60 * 1000;   // one quote every three minutes
-let quoteShown = -1;
+let quoteShown = '';
 
 function rotateQuote() {
-  // derived from the clock, so it survives reloads and every TV agrees
-  const idx = Math.floor(Date.now() / QUOTE_MS) % QUOTES.length;
-  if (idx === quoteShown) return;
-  quoteShown = idx;
+  const s = CQ.state;
   const box = $('quote');
+  const items = (s && s.quotesEnabled && Array.isArray(s.quotes)) ? s.quotes : [];
+  if (!items.length) { box.hidden = true; quoteShown = ''; return; }
+  // index derives from the clock, so reloads and every TV agree
+  const idx = Math.floor(Date.now() / QUOTE_MS) % items.length;
+  const q = items[idx];
+  const key = idx + '|' + (q.hi || '') + '|' + (q.en || '');
+  if (key === quoteShown) return;
+  quoteShown = key;
   box.hidden = false;
   box.classList.remove('swap');
   void box.offsetWidth;             // restart the animation
-  $('quote-hi').textContent = QUOTES[idx].hi;
-  $('quote-en').textContent = QUOTES[idx].en;
+  $('quote-hi').textContent = q.hi || '';
+  $('quote-hi').style.display = q.hi ? '' : 'none';
+  $('quote-en').textContent = q.en || '';
+  $('quote-en').style.display = q.en ? '' : 'none';
   box.classList.add('swap');
 }
 
-rotateQuote();
-setInterval(rotateQuote, 15000);
+CQ.onState(rotateQuote);          // first paint and settings changes
+setInterval(rotateQuote, 15000);  // the three-minute tick between polls
 
 CQ.clock('clock');
 CQ.start(1500);

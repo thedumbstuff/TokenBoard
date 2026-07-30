@@ -93,6 +93,33 @@ const DEFAULT_CONFIG = {
   autoAssign: true,      // system puts patients into free rooms by itself
   announce: true,        // speak the token number on the waiting-room screen
   language: 'both',      // 'en' | 'hi' | 'both'
+
+  // Rotating queue-etiquette quotes on the waiting-room screen; editable and
+  // switchable in Settings. These ten are the starting set.
+  quotesEnabled: true,
+  quotes: [
+    { hi: 'हर किसी की बारी आती है — कतार सबके साथ न्याय करती है।',
+      en: 'Everyone gets their turn — the queue is fair to all.' },
+    { hi: 'आपका नंबर ही आपकी जगह है — इसे कोई नहीं ले सकता।',
+      en: 'Your number holds your place. It cannot be taken.' },
+    { hi: 'शांत प्रतीक्षालय में डॉक्टर हर मरीज़ को बेहतर देखभाल दे पाते हैं।',
+      en: 'A calm waiting room helps the doctor care better for everyone.' },
+    { hi: 'गंभीर मरीज़ पहले जाते हैं — कल यह ज़रूरत आपके अपनों की भी हो सकती है।',
+      en: 'Urgent patients go first — one day it could be someone you love.' },
+    { hi: 'यह स्क्रीन हमेशा सही क्रम दिखाती है — काउंटर पर पूछने की ज़रूरत नहीं।',
+      en: 'This screen always shows the true order — no need to ask at the desk.' },
+    { hi: 'दरवाज़े पर खड़े होने से कतार तेज़ नहीं चलती।',
+      en: 'Standing at the door does not make the line move faster.' },
+    { hi: 'कतार में धैर्य, अंदर बैठे मरीज़ की देखभाल है।',
+      en: 'Patience in the queue is care for the patient inside.' },
+    { hi: 'नंबर पुकारे जाने पर कमरे का रंग आपको रास्ता दिखाएगा।',
+      en: 'When your number is called, the room’s colour shows you the way.' },
+    { hi: 'बारी छूट गई? काउंटर पर बताइए — आपका नंबर वापस आ जाएगा।',
+      en: 'Missed your call? Tell the desk — your number comes back.' },
+    { hi: 'एक के साथ न्याय, सबके साथ न्याय — यही कतार का वादा है।',
+      en: 'Fair to one, fair to all — that is the promise of the queue.' }
+  ],
+
   port: 8080,
   pin: '1234'            // protects the Settings page only
 };
@@ -570,6 +597,8 @@ function publicState() {
     doctorName: config.doctorName,
     language: config.language,
     announce: config.announce,
+    quotesEnabled: config.quotesEnabled !== false,
+    quotes: Array.isArray(config.quotes) ? config.quotes : [],
     autoAssign: config.autoAssign,
     urgentPrefix: config.urgentPrefix,
     apptPrefix: config.apptPrefix,
@@ -753,7 +782,7 @@ const server = http.createServer(async (req, res) => {
         const allowed = ['clinicName', 'doctorName', 'rooms', 'services', 'startNumber', 'resetDaily',
           'urgentPrefix', 'urgentStartNumber', 'apptPrefix', 'apptStartNumber',
           'queuePolicy', 'mixAppointment', 'mixWalkIn',
-          'autoAssign', 'announce', 'language', 'pin'];
+          'autoAssign', 'announce', 'language', 'quotesEnabled', 'quotes', 'pin'];
         for (const k of allowed) {
           if (incoming[k] !== undefined) config[k] = incoming[k];
         }
@@ -772,6 +801,14 @@ const server = http.createServer(async (req, res) => {
             prefix: (String(s.prefix || '').trim().toUpperCase().slice(0, 2)) || 'S',
             color: /^#[0-9a-fA-F]{6}$/.test(s.color || '') ? s.color : '#4A5568'
           }));
+        config.quotesEnabled = config.quotesEnabled !== false;
+        config.quotes = (Array.isArray(config.quotes) ? config.quotes : [])
+          .slice(0, 20)
+          .map(q => ({
+            hi: String((q && q.hi) || '').trim().slice(0, 160),
+            en: String((q && q.en) || '').trim().slice(0, 160)
+          }))
+          .filter(q => q.hi || q.en);
         saveAtomic(CONFIG_FILE, config);
 
         // free any room that no longer exists
