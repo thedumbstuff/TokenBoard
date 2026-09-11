@@ -161,7 +161,8 @@ function freshState(day, carry) {
     rooms: config.rooms.map(r => ({ id: r.id, tokenId: null, reserved: false })),
     services: config.services.map(s => ({ id: s.id, tokenId: null })),
     lastService: carry.services || {},   // serviceId -> last number issued
-    paused: false
+    paused: false,
+    silenceAt: 0    // when reception last asked the TV for quiet
   };
 }
 
@@ -195,6 +196,7 @@ function loadTodayState() {
   if (!s.served) s.served = { appointment: 0, normal: 0 };
   if (s.cyclePos == null) s.cyclePos = 0;
   if (!s.lastService) s.lastService = {};
+  if (s.silenceAt == null) s.silenceAt = 0;
 
   // reconcile rooms if the doctor changed room count in Settings
   const byId = new Map((s.rooms || []).map(r => [r.id, r]));
@@ -593,6 +595,7 @@ function publicState() {
     version: state.version,
     date: state.date,
     paused: state.paused,
+    silenceAt: state.silenceAt || 0,
     clinicName: config.clinicName,
     doctorName: config.doctorName,
     language: config.language,
@@ -770,6 +773,17 @@ const server = http.createServer(async (req, res) => {
       if (p === '/api/pause') {
         snapshot(); state.paused = !!body.paused;
         if (!state.paused) autoAssign();
+        persist();
+        return sendJson(res, 200, { ok: true, state: publicState() });
+      }
+
+      if (p === '/api/silence') {
+        // reception asking the waiting-room TV to request quiet. The TV
+        // announces whenever this timestamp changes. No snapshot(): an
+        // announcement cannot be unsaid, and a stack entry here would
+        // eat the receptionist's real undo.
+        rollDayIfNeeded();
+        state.silenceAt = Date.now();
         persist();
         return sendJson(res, 200, { ok: true, state: publicState() });
       }

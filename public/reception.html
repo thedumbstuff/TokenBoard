@@ -79,6 +79,14 @@
 
     <div style="height:16px"></div>
 
+    <!-- one press and the TV asks the waiting room for quiet, Hindi and English -->
+    <button class="btn" id="silence" style="width:100%;padding:12px 16px">
+      Silence please
+      <small style="display:block;font-weight:500;opacity:.75;margin-top:2px">कृपया शांति बनाए रखें - announced on the TV</small>
+    </button>
+
+    <div style="height:16px"></div>
+
     <div class="panel">
       <h2>Waiting outside <span id="wait-badge"></span></h2>
       <ul class="qlist" id="waiting"></ul>
@@ -192,6 +200,18 @@ $('undo').onclick = async () => {
 
 // doctor on a break: stop filling rooms, keep giving out numbers
 $('pause').onclick = () => CQ.post('/api/pause', { paused: !(CQ.state && CQ.state.paused) });
+
+// a noisy waiting room: the TV chimes and asks for quiet in both languages.
+// Disabled long enough for the announcement to finish, so repeated presses
+// do not pile spoken requests on top of each other.
+$('silence').onclick = async () => {
+  const b = $('silence'), old = b.innerHTML;
+  b.disabled = true;
+  b.textContent = 'Playing on the TV screen...';
+  try { await CQ.post('/api/silence', {}); }
+  catch (e) { alert('Could not reach the system. Check the black window is still open.'); }
+  setTimeout(() => { b.innerHTML = old; b.disabled = false; }, 8000);
+};
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') hideTicket();

@@ -237,6 +237,7 @@
 const $ = id => document.getElementById(id);
 let soundOn = false;
 let known = {};      // roomId -> token label currently shown
+let knownSilence = 0;
 let firstPaint = true;
 
 $('startup').onclick = () => {
@@ -268,7 +269,30 @@ function announce(room, label, s) {
   }, 700);
 }
 
+function silenceAnnouncement() {
+  if (!soundOn) return;
+  CQ.chime();
+  // Speaks even when routine announcements are set to "beep only":
+  // the receptionist pressed a button that exists only to speak, and a
+  // beep alone cannot ask a room to be quiet. Both languages always -
+  // the request is aimed at everyone in the room, and speak() stays
+  // silent for a language whose voice is not installed.
+  setTimeout(() => {
+    CQ.speak('कृपया शांति बनाए रखें. धन्यवाद.', 'hi-IN');
+    CQ.speak('Please maintain silence. Thank you.', 'en-IN');
+  }, 700);
+}
+
 CQ.onState(s => {
+  // reception pressed "Silence please". Announce only when the stamp
+  // changes while the screen is already up, so a reload or a server
+  // restart never replays an old request.
+  if (firstPaint) knownSilence = s.silenceAt || 0;
+  else if (s.silenceAt && s.silenceAt !== knownSilence) {
+    knownSilence = s.silenceAt;
+    silenceAnnouncement();
+  }
+
   $('clinic').textContent = s.clinicName;
   $('doctor').textContent = s.doctorName;
 

@@ -351,6 +351,37 @@ async function testVipReserve() {
   await stop(p);
 }
 
+async function testSilenceRequest() {
+  console.log('\nasking the waiting room for silence');
+  const dir = dataDir('silence'), port = portCounter++;
+  writeConfig(dir, baseConfig());
+  let p = await start(dir, port);
+
+  let s = await api.get(port, '/api/state');
+  check('a fresh day starts with no silence request', s.silenceAt, 0);
+  const before = s.version;
+
+  s = (await api.post(port, '/api/silence', {})).state;
+  ok('pressing the button stamps the request', s.silenceAt > 0);
+  ok('and bumps the version so the TV polls it up', s.version > before);
+  const first = s.silenceAt;
+
+  await sleep(5);
+  s = (await api.post(port, '/api/silence', {})).state;
+  ok('a second press is a new stamp, so the TV speaks again', s.silenceAt > first);
+
+  // the TV only announces on a change it sees while running, so the stamp
+  // surviving a restart must not look like a fresh request
+  await stop(p, true);                       // power cut
+  p = await start(dir, port);
+  const after = await api.get(port, '/api/state');
+  check('the stamp is unchanged after a power cut', after.silenceAt, s.silenceAt);
+
+  ok('a silence request is not undoable', !(await api.post(port, '/api/undo', {})).ok);
+
+  await stop(p);
+}
+
 async function testServices() {
   console.log('\na test room (X-ray) with its own queue');
   const dir = dataDir('services'), port = portCounter++;
@@ -559,6 +590,7 @@ function testQr() {
     await testContinuousNumbering();
     await testCorrections();
     await testVipReserve();
+    await testSilenceRequest();
     await testServices();
     await testReturnFromTest();
     await testPages();

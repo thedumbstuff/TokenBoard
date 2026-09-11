@@ -165,6 +165,11 @@ The next patient is sent in automatically.
 - Patient not answering when called? → **Patient not here**. They move to a
   "Did not answer" list and can be called again later with one button.
 
+**When the waiting room gets too noisy**
+
+- Press **Silence please**, under the number buttons. The TV plays its chime
+  and asks everyone, in Hindi and in English, to please maintain silence.
+
 **Keeping a room for a VIP**
 
 - Press **Reserve for VIP** on that room's card. The queue goes around it and

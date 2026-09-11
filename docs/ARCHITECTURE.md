@@ -200,6 +200,7 @@ No framework; a single `http.createServer` handler with an if-chain.
 | POST | `/api/undo` | restore the previous snapshot |
 | POST | `/api/reserve` | hold/release a room for a VIP `{room, reserved}` |
 | POST | `/api/pause` | `{paused: bool}` |
+| POST | `/api/silence` | make the TV ask for quiet, in Hindi and English |
 | POST | `/api/config` | save settings; requires `{pin}` |
 | POST | `/api/verify-pin` | gate for the Settings page |
 
@@ -235,6 +236,10 @@ One shared object, `CQ`, used by all four pages:
   file, nothing to download. `speak(text, lang)` uses the browser's built-in
   speech synthesis for Hindi/English announcements; token numbers are spelled
   digit-by-digit ("one zero five") to survive a noisy waiting room.
+- Reception's "Silence please" button goes through the server like everything
+  else: `/api/silence` stamps `state.silenceAt`, and the TV speaks when it
+  sees the stamp change while already running — never on first paint, so a
+  reload or restart cannot replay an old request.
 - **No `localStorage`, no `sessionStorage`.** Browsers hold render state only;
   three screens must always agree, so the server is the only source of truth.
 
