@@ -168,7 +168,8 @@ The next patient is sent in automatically.
 **When the waiting room gets too noisy**
 
 - Press **Silence please**, under the number buttons. The TV plays its chime
-  and asks everyone, in Hindi and in English, to please maintain silence.
+  and asks everyone to please maintain silence - in Hindi, English or both,
+  chosen in Settings. The doctor's phone has the same button.
 
 **Keeping a room for a VIP**
 

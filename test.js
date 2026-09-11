@@ -379,6 +379,12 @@ async function testSilenceRequest() {
 
   ok('a silence request is not undoable', !(await api.post(port, '/api/undo', {})).ok);
 
+  // the spoken language is a Settings choice; old configs mean "both"
+  check('with nothing chosen it speaks both languages', after.silenceLanguage, 'both');
+  await api.post(port, '/api/config', { pin: '1234', config: { silenceLanguage: 'hi' } });
+  s = await api.get(port, '/api/state');
+  check('Settings can make it Hindi only', s.silenceLanguage, 'hi');
+
   await stop(p);
 }
 

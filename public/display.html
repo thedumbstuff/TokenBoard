@@ -269,17 +269,18 @@ function announce(room, label, s) {
   }, 700);
 }
 
-function silenceAnnouncement() {
+function silenceAnnouncement(s) {
   if (!soundOn) return;
   CQ.chime();
   // Speaks even when routine announcements are set to "beep only":
-  // the receptionist pressed a button that exists only to speak, and a
-  // beep alone cannot ask a room to be quiet. Both languages always -
-  // the request is aimed at everyone in the room, and speak() stays
-  // silent for a language whose voice is not installed.
+  // someone pressed a button that exists only to speak, and a beep
+  // alone cannot ask a room to be quiet. The language is its own
+  // Settings choice, and speak() stays silent for a language whose
+  // voice is not installed.
+  const lang = s.silenceLanguage || 'both';
   setTimeout(() => {
-    CQ.speak('कृपया शांति बनाए रखें. धन्यवाद.', 'hi-IN');
-    CQ.speak('Please maintain silence. Thank you.', 'en-IN');
+    if (lang === 'hi' || lang === 'both') CQ.speak('कृपया शांति बनाए रखें. धन्यवाद.', 'hi-IN');
+    if (lang === 'en' || lang === 'both') CQ.speak('Please maintain silence. Thank you.', 'en-IN');
   }, 700);
 }
 
@@ -290,7 +291,7 @@ CQ.onState(s => {
   if (firstPaint) knownSilence = s.silenceAt || 0;
   else if (s.silenceAt && s.silenceAt !== knownSilence) {
     knownSilence = s.silenceAt;
-    silenceAnnouncement();
+    silenceAnnouncement(s);
   }
 
   $('clinic').textContent = s.clinicName;

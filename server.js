@@ -93,6 +93,7 @@ const DEFAULT_CONFIG = {
   autoAssign: true,      // system puts patients into free rooms by itself
   announce: true,        // speak the token number on the waiting-room screen
   language: 'both',      // 'en' | 'hi' | 'both'
+  silenceLanguage: 'both', // the "Silence please" button; same three choices
 
   // Rotating queue-etiquette quotes on the waiting-room screen; editable and
   // switchable in Settings. These ten are the starting set.
@@ -600,6 +601,7 @@ function publicState() {
     doctorName: config.doctorName,
     language: config.language,
     announce: config.announce,
+    silenceLanguage: config.silenceLanguage || 'both',
     quotesEnabled: config.quotesEnabled !== false,
     quotes: Array.isArray(config.quotes) ? config.quotes : [],
     autoAssign: config.autoAssign,
@@ -796,7 +798,7 @@ const server = http.createServer(async (req, res) => {
         const allowed = ['clinicName', 'doctorName', 'rooms', 'services', 'startNumber', 'resetDaily',
           'urgentPrefix', 'urgentStartNumber', 'apptPrefix', 'apptStartNumber',
           'queuePolicy', 'mixAppointment', 'mixWalkIn',
-          'autoAssign', 'announce', 'language', 'quotesEnabled', 'quotes', 'pin'];
+          'autoAssign', 'announce', 'language', 'silenceLanguage', 'quotesEnabled', 'quotes', 'pin'];
         for (const k of allowed) {
           if (incoming[k] !== undefined) config[k] = incoming[k];
         }

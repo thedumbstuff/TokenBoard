@@ -63,6 +63,12 @@
 
   <div class="rooms" id="rooms"></div>
 
+  <!-- one tap and the TV asks the waiting room for quiet -->
+  <button class="btn" id="silence" style="width:100%;padding:13px">
+    Silence please
+    <small style="display:block;font-weight:500;opacity:.75;margin-top:2px">कृपया शांति बनाए रखें - announced on the TV</small>
+  </button>
+
   <!-- shows the test number just issued, so the doctor can tell the patient -->
   <div class="panel" id="sent-note" hidden style="text-align:center"></div>
 
@@ -87,6 +93,17 @@ function esc(s) {
 }
 
 $('pause').onclick = () => CQ.post('/api/pause', { paused: !(CQ.state && CQ.state.paused) });
+
+// same button as reception: the TV chimes and asks for quiet. Disabled long
+// enough for the announcement to finish, so taps cannot pile speech up.
+$('silence').onclick = async () => {
+  const b = $('silence'), old = b.innerHTML;
+  b.disabled = true;
+  b.textContent = 'Playing on the TV screen...';
+  try { await CQ.post('/api/silence', {}); }
+  catch (e) { alert('Could not reach the system. Check the black window is still open.'); }
+  setTimeout(() => { b.innerHTML = old; b.disabled = false; }, 8000);
+};
 
 /* Send the patient in a room for a test: frees the room, issues a linked
    number, and when the test room finishes they come back to the doctor next. */
